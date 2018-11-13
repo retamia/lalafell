@@ -22,7 +22,7 @@ public:
     virtual ~LinkedBlockingQueue();
 
     void enqueue(T ele);
-    T dequeue();
+    T dequeue(int64_t millis = 0);
 
     const T &first() const;
 
@@ -121,17 +121,22 @@ int LinkedBlockingQueue<T>::size()
 }
 
 template<typename T>
-T LinkedBlockingQueue<T>::dequeue()
+T LinkedBlockingQueue<T>::dequeue(int64_t millis)
 {
 
     std::unique_lock<std::mutex> lock(queueMutex);
 
     if (queueSize == 0) {
-        notEmpty.wait(lock);
+        if (millis <= 0) {
+            notEmpty.wait(lock);
+        }else {
+            notEmpty.wait_for(lock, std::chrono::milliseconds(millis));
+        }
+
     }
 
     if (firstNode == nullptr) {
-        nullptr;
+        return nullptr;
     }
 
     Node *node = firstNode;

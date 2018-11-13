@@ -8,6 +8,7 @@
 #include <string>
 
 class RTMPExtractor;
+class ANativeWindow;
 
 class LivePlayer {
 public:
@@ -17,6 +18,9 @@ public:
     void prepare(const char *url);
     void play();
     void release();
+    void setRendererSurface(ANativeWindow *window);
+
+
 private:
     RTMPExtractor *rtmpExtractor;
     std::string url;

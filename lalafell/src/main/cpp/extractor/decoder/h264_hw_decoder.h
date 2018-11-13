@@ -6,8 +6,8 @@
 #define LIVEPLAYER_H264_HW_DECODER_H
 
 #include "util/thread.h"
-#include <atomic>
 
+struct RFrame;
 struct RRtmpPacket;
 struct AMediaCodec;
 struct AMediaFormat;
@@ -23,6 +23,7 @@ public:
     explicit H264HwDecoder();
     virtual ~H264HwDecoder();
 
+    void setVideoFrameQueue(LinkedBlockingQueue<RFrame *> *videoFrameQueue);
     void setPacketQueue(LinkedBlockingQueue<RRtmpPacket *> *queue);
 
 protected:
@@ -32,14 +33,16 @@ private:
     bool decodeMetadata(RRtmpPacket *packet);
     void decodeFrame(RRtmpPacket *packet);
     void extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *outSpsLen, uint8_t **outPps, int *outPpsLen);
-    void extractFrame(RRtmpPacket *packet, int num, uint8_t **outNalu, int *outNaluLen);
+
+    void release();
 
 private:
-    LinkedBlockingQueue<RRtmpPacket *> *queue;
+    LinkedBlockingQueue<RRtmpPacket *> *packetQueue;
+    LinkedBlockingQueue<RFrame *> *renderQueue;
 
     MediaCodecDequeueThread *dequeueThread;
 
-    std::atomic<AMediaCodec *> mediaCodec;
+    AMediaCodec *mediaCodec;
     AMediaFormat *mediaFormat;
 };
 

@@ -11,7 +11,7 @@
 #define MEDIA_CODEC_CODEC_COLOR_FMT_NV21  21
 
 enum class RPacketType {
-    VIDEO,
+    H264_PACKET,
     AUDIO,
 };
 

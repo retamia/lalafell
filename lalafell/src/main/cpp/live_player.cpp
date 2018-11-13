@@ -31,3 +31,8 @@ void LivePlayer::play() {
 void LivePlayer::release() {
 
 }
+
+void LivePlayer::setRendererSurface(ANativeWindow *window)
+{
+    rtmpExtractor->setRenderSurface(window);
+}

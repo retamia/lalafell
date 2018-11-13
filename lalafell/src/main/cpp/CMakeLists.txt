@@ -14,6 +14,7 @@ set(LIB_LIVE_PLAYER_HEADERS
         extractor/decoder/sps_decode.h
         extractor/decoder/media_codec_dequeue_thread.h
         extractor/decoder/h264_hw_decoder.h
+        extractor/renderer/gl_renderer.h
         extractor/rtmp_extractor.h
         live_player.h)
 
@@ -22,10 +23,11 @@ set(LIB_LIVE_PLAYER_SOURCES
         extractor/decoder/media_codec_dequeue_thread.cpp
         extractor/decoder/h264_hw_decoder.cpp
         extractor/rtmp_extractor.cpp
+        extractor/renderer/gl_renderer.cpp
         live_player.cpp
         live_player_jni.cpp)
 
-set(ANDROID_LIB android log mediandk)
+set(ANDROID_LIB android log mediandk GLESv2 EGL)
 
 add_library(${PROJECT_NAME} SHARED
         ${LIB_LIVE_PLAYER_HEADERS}

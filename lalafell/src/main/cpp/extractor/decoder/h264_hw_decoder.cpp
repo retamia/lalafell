@@ -15,21 +15,23 @@
 #include "live_player_type_def.h"
 #include "util/linked_blocking_queue.h"
 
-static uint8_t startCode[4] = {0x00, 0x00, 0x00, 0x01};
-
-H264HwDecoder::H264HwDecoder() : mediaCodec(nullptr), mediaFormat(nullptr), dequeueThread(new MediaCodecDequeueThread())
+H264HwDecoder::H264HwDecoder() : mediaCodec(nullptr), mediaFormat(nullptr), dequeueThread(nullptr)
 {
 }
 
 H264HwDecoder::~H264HwDecoder()
 {
-    dequeueThread->requestInterruption();
-    dequeueThread->wait();
+    release();
+}
+
+void H264HwDecoder::setVideoFrameQueue(LinkedBlockingQueue<RFrame *> *videoFrameQueue)
+{
+    this->renderQueue = videoFrameQueue;
 }
 
 void H264HwDecoder::setPacketQueue(LinkedBlockingQueue<RRtmpPacket *> *queue)
 {
-    this->queue = queue;
+    this->packetQueue = queue;
 }
 
 void H264HwDecoder::run()
@@ -37,7 +39,7 @@ void H264HwDecoder::run()
     RRtmpPacket *packet = nullptr;
 
     while (!isInterruptionRequested()) {
-         packet = queue->dequeue();
+        packet = packetQueue->dequeue();
 
         if (packet->data[0] == 0x17 && packet->data[1] == 0x00) {
             if (!decodeMetadata(packet)) {
@@ -69,7 +71,15 @@ bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
 
     int width = 0, height = 0, fps = 0;
 
-    int result = h264_decode_sps(sps + 4, spsLen - 4, width, height, fps);
+    int result;
+    if (sps[0] == 0x00 && sps[1] == 0x00 && sps[2] == 0x01) {
+        result = h264_decode_sps(sps + 3, spsLen - 3, width, height, fps);
+    } else if (sps[0] == 0x00 && sps[1] == 0x00 && sps[2] == 0x00 && sps[3] == 0x01) {
+        result = h264_decode_sps(sps + 4, spsLen - 4, width, height, fps);
+    } else {
+        LOGE("sps start code error");
+        return false;
+    }
 
     if(!result) {
         LOGE("decode sps error");
@@ -98,18 +108,19 @@ bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
 
     int configure = AMediaCodec_configure(mediaCodec, mediaFormat, NULL, NULL, 0);
     if (configure != AMEDIA_OK) {
-        AMediaFormat_delete(mediaFormat);
-        mediaFormat = nullptr;
-        AMediaCodec_stop(mediaCodec);
-        AMediaCodec_delete(mediaCodec);
-        mediaCodec = nullptr;
+        release();
         LOGE("mediaccodec configure error");
         return false;
     }
 
-    AMediaCodec_start(mediaCodec);
-    dequeueThread->setMediaCodec(&mediaCodec);
-    dequeueThread->start();
+    if (dequeueThread == nullptr) {
+        AMediaCodec_start(mediaCodec);
+        dequeueThread = new MediaCodecDequeueThread();
+        dequeueThread->setMediaCodec(mediaCodec);
+        dequeueThread->setVideoFrameQueue(renderQueue);
+        dequeueThread->start();
+    }
+
     return true;
 }
 
@@ -119,11 +130,10 @@ void H264HwDecoder::decodeFrame(RRtmpPacket *packet)
         return;
     }
 
-    //bool isKeyFrame = packet->data[]
+    static uint8_t startCode[4] = {0x00, 0x00, 0x00, 0x01};
 
-    uint8_t *nalu;
-    int num = 5, startLen = 4;
-    int naluLen;
+    bool isKeyFrame = packet->data[0] == 0x17;
+    int num = 5, startCodeLen = 4, len = 0;
 
     while (num < packet->size) {
 
@@ -133,15 +143,23 @@ void H264HwDecoder::decodeFrame(RRtmpPacket *packet)
             break;
         }
 
-        extractFrame(packet, num, &nalu, &naluLen);
-        num += naluLen;
+        uint8_t *data = packet->data;
+
+        len = (data[num] & 0x000000FF) << 24 | (data[num + 1] & 0x000000FF) << 16 | (data[num + 2] & 0x000000FF) << 8 | (data[num + 3] & 0x000000FF);
+        num += startCodeLen;
+
+        uint8_t *nalu = (uint8_t *)malloc((len + startCodeLen) * sizeof(uint8_t));
+        memcpy(nalu, startCode, startCodeLen * sizeof(uint8_t));
+        memcpy(nalu, data + num, len * sizeof(uint8_t));
+
+        num += len;
 
         size_t size = 0;
         uint8_t *inputBuf = AMediaCodec_getInputBuffer(mediaCodec, bufId, &size);
         int status;
-        if (inputBuf != nullptr && size >= naluLen + startLen) {
-            memcpy(inputBuf, nalu, naluLen + startLen);
-            status = AMediaCodec_queueInputBuffer(mediaCodec, bufId, 0, packet->size, packet->pts, 0);
+        if (inputBuf != nullptr && size >= len + startCodeLen) {
+            memcpy(inputBuf, nalu, (len + startCodeLen) * sizeof(uint8_t));
+            status = AMediaCodec_queueInputBuffer(mediaCodec, bufId, 0, len + startCodeLen, packet->pts, 0);
 
             if (status != AMEDIA_OK) {
                 LOGE("queue input buffer error");
@@ -155,11 +173,11 @@ void H264HwDecoder::decodeFrame(RRtmpPacket *packet)
 void H264HwDecoder::extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *outSpsLen, uint8_t **outPps, int *outPpsLen)
 {
     uint8_t *data = packet->data;
+    static uint8_t startCode[4] = {0x00, 0x00, 0x00, 0x01};
+    int spsNum = data[10] & 0x1f, spsCount = 1, spsEnd = 11;
 
-    int spsSize = data[10] & 0x1f, spsIndex = 1, spsEnd = 11;
-
-    while (spsIndex <= spsSize) {
-        *outSpsLen = (data[spsEnd] & 0x000000FF << 8 | (data[spsEnd + 1] & 0x000000FF));
+    while (spsCount <= spsNum) {
+        *outSpsLen = ((data[spsEnd] & 0x000000FF) << 8) | (data[spsEnd + 1] & 0x000000FF);
 
         *outSps = (uint8_t *) malloc(*outSpsLen + 4);
         spsEnd += 2;
@@ -167,16 +185,16 @@ void H264HwDecoder::extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *ou
         memcpy(*outSps + 4, data + spsEnd, *outSpsLen);
 
         spsEnd += *outSpsLen;
-        spsIndex++;
+        spsCount++;
 
         *outSpsLen += 4;
     }
 
-    int ppsSize = data[spsEnd] & 0x1f;
-    int ppsEnd = spsEnd + 1, ppsIndex = 1;
+    int ppsNum = data[spsEnd] & 0x1f;
+    int ppsEnd = spsEnd + 1, ppsCount = 1;
 
-    while (ppsIndex <= ppsSize) {
-        *outPpsLen = (data[ppsEnd] & 0x000000FF) << 8 | data[ppsEnd + 1] & 0x000000FF;
+    while (ppsCount <= ppsNum) {
+        *outPpsLen = ((data[ppsEnd] & 0x000000FF) << 8) | (data[ppsEnd + 1] & 0x000000FF);
         ppsEnd += 2;
 
         *outPps = (uint8_t *) malloc(*outPpsLen + 4);
@@ -185,24 +203,30 @@ void H264HwDecoder::extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *ou
         memcpy(*outPps + 4, data + ppsEnd, *outPpsLen);
 
         ppsEnd +=  *outPpsLen;
-        ppsIndex++;
+        ppsCount++;
 
         *outPpsLen += 4;
     }
 }
 
-void H264HwDecoder::extractFrame(RRtmpPacket *packet, int num, uint8_t **outNalu, int *outNaluLen)
+void H264HwDecoder::release()
 {
-    uint8_t *data = packet->data;
+    if (mediaFormat != nullptr) {
+        AMediaFormat_delete(mediaFormat);
+        mediaFormat = nullptr;
+    }
 
-    *outNaluLen = (data[num] & 0x000000FF) << 24 | (data[num + 1] & 0x000000FF) << 16 | (data[num + 2] & 0x000000FF) << 8 | (data[num + 3] & 0x000000FF);
+    if (mediaCodec != nullptr) {
+        AMediaCodec_stop(mediaCodec);
+        AMediaCodec_delete(mediaCodec);
+        mediaCodec = nullptr;
+    }
 
-    num += 4;
+    if (dequeueThread != nullptr) {
+        dequeueThread->requestInterruption();
+        dequeueThread->wait();
 
-    *outNalu = (uint8_t *)malloc(*outNaluLen + 4);
-    memcpy(*outNalu, startCode, 4);
-    memcpy(*outNalu + 4, data + num, *outNaluLen);
-
+        delete dequeueThread;
+        dequeueThread = nullptr;
+    }
 }
-
-

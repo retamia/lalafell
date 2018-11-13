@@ -1,0 +1,7 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.retamia.lalafell" >
+
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
+
+
