@@ -7,12 +7,6 @@
 
 #include <media/NdkMediaFormat.h>
 #include <media/NdkMediaCodec.h>
-#include <media/NdkMediaExtractor.h>
-#include <media/NdkImage.h>
-#include <media/NdkImageReader.h>
-#include <media/NdkMediaDataSource.h>
-#include <media/NdkMediaError.h>
-#include <media/NdkMediaMuxer.h>
 
 
 #include "__android.h"
@@ -21,7 +15,7 @@
 #include "live_player_type_def.h"
 #include "util/linked_blocking_queue.h"
 
-static void mediacodec_input_available(AMediaCodec *codec, void *userdata, int32_t bufIndex)
+/*static void mediacodec_input_available(AMediaCodec *codec, void *userdata, int32_t bufIndex)
 {
 
 }
@@ -34,7 +28,7 @@ static void mediacodec_output_available(AMediaCodec *codec, void *userdata, int3
 static void mediacodec_format_changed(AMediaCodec *codec, void *userdata, AMediaFormat *format)
 {
 
-}
+}*/
 
 H264HwDecoder::H264HwDecoder()
     : mediaCodec(nullptr)
@@ -42,9 +36,12 @@ H264HwDecoder::H264HwDecoder()
     , dequeueThread(nullptr)
     , released(false)
 {
-    codecCallback.onAsyncInputAvailable = mediacodec_input_available;
-    codecCallback.onAsyncOutputAvailable = mediacodec_output_available;
-    codecCallback.onAsyncFormatChanged = mediacodec_format_changed;
+    /**
+     * Android 8.0
+     * codecCallback.onAsyncInputAvailable = mediacodec_input_available;
+     * codecCallback.onAsyncOutputAvailable = mediacodec_output_available;
+     * codecCallback.onAsyncFormatChanged = mediacodec_format_changed;
+     */
 }
 
 H264HwDecoder::~H264HwDecoder()
@@ -127,7 +124,7 @@ bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
     AMediaFormat_setBuffer(mediaFormat , "csd-0", sps, spsLen);
     AMediaFormat_setBuffer(mediaFormat, "csd-1", pps, ppsLen);
 
-    AMediaFormat_setInt32(mediaFormat , AMEDIAFORMAT_KEY_COLOR_FORMAT, AMediaCodec);
+    AMediaFormat_setInt32(mediaFormat , AMEDIAFORMAT_KEY_COLOR_FORMAT, MEDIA_CODEC_COLOR_FMT_YUV420P);
 
     free(sps);
     free(pps);
