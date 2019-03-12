@@ -34,8 +34,15 @@ void MediaCodecDequeueThread::run()
         ssize_t outBufId = AMediaCodec_dequeueOutputBuffer(mediaCodec, &info, MEDIA_CODEC_OUTPUT_TIMEOUT_US);
 
         if (outBufId < 0) {
-            // format AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED
-            continue;
+            switch (outBufId) {
+                case AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED: {
+
+                }
+                default: {
+                    msleep(MEDIA_CODEC_OUTPUT_TIMEOUT_US);
+                    continue;
+                }
+            }
         }
 
         size_t size = 0;

@@ -19,6 +19,8 @@ struct RFrame;
 template<typename T>
 class LinkedBlockingQueue;
 
+class OpenGLESShader;
+
 class GLRenderer : public RThread
 {
 public:
@@ -36,11 +38,6 @@ private:
 
 private:
 
-    jclass SurfaceTextureBridge;
-    jmethodID texture_getSurface;
-    jmethodID texture_updateTexImage;
-    jmethodID texture_getTransformMatrix;
-
     JNIEnv *jniEnv;
     ANativeWindow *window;
     LinkedBlockingQueue<RFrame *> *frameQueue;
@@ -54,6 +51,8 @@ private:
     EGLint width;
     EGLint height;
     GLfloat ratio;
+
+    OpenGLESShader *shader;
 
     std::atomic_bool refreshSurface;
 };

@@ -8,26 +8,58 @@
 
 #include "__android.h"
 #include "util/linked_blocking_queue.h"
+#include "oges/oges_shader.h"
 #include "live_player_type_def.h"
 
-#define EGL_NO_CONFIG  EGL_CAST(EGLConfig,0)
+#define EGL_NO_CONFIG  EGL_CAST(EGLConfig, 0)
+
+
+const char *vertex_shader_source =
+    "attribute vec4 vertexIn;\n"
+    "attribute vec2 textureIn;\n"
+    "varying vec2 textureOut;\n"
+    "void main(void)\n"
+    "{\n"
+    "    gl_Position = vertexIn;\n"
+    "    textureOut = textureIn;\n"
+    "}";
+
+const char *fragmeng_shader_source =
+    "precision mediump float;\n"
+    "varying vec2 textureOut;\n"
+    "uniform sampler2D tex_y;\n"
+    "uniform sampler2D tex_u;\n"
+    "uniform sampler2D tex_v;\n"
+    "void main(void)\n"
+    "{\n"
+    "    vec3 yuv;\n"
+    "    vec3 rgb;\n"
+    "    yuv.x = texture(tex_y, textureOut).r;\n"
+    "    yuv.y = texture(tex_u, textureOut).r - 0.5;\n"
+    "    yuv.z = texture(tex_v, textureOut).r - 0.5;\n"
+    "    rgb = mat3( 1,       1,         1,\n"
+    "               0,       -0.21482,  2.12798,\n"
+    "               1.28033, -0.38059,  0) * yuv;\n"
+    "    gl_FragColor = vec4(rgb, 1);\n"
+    "}";
 
 GLRenderer::GLRenderer()
     : window(nullptr)
     , frameQueue(nullptr)
     , lastFrame(nullptr)
-    , display(EGL_DEFAULT_DISPLAY)
+    , display(EGL_NO_DISPLAY)
     , context(EGL_NO_CONTEXT)
     , surface(EGL_NO_SURFACE)
     , config(EGL_NO_CONFIG)
     , refreshSurface(false)
 {
-
+    shader = new OpenGLESShader();
+    //shader->
 }
 
 GLRenderer::~GLRenderer()
 {
-
+    delete shader;
 }
 
 void GLRenderer::setRenderFrameQueue(LinkedBlockingQueue<RFrame *> *queue)
@@ -87,6 +119,8 @@ void GLRenderer::initEGL()
         LOGE("eglQuerySurface() returned error %d", eglGetError());
         return;
     }
+
+    LOGI("initEGL success");
 }
 
 void GLRenderer::setRenderWindow(ANativeWindow *window)
@@ -110,6 +144,8 @@ void GLRenderer::setRenderWindow(ANativeWindow *window)
         eglQuerySurface(display, surface, EGL_HEIGHT, &height);
     }
 
+    glViewport(0, 0, width, height);
+
     glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
     refreshSurface = true;
 }
@@ -125,7 +161,7 @@ void GLRenderer::run()
         }
 
         if (refreshSurface) {
-            drawFrame();
+            //drawFrame();
         }
 
         RFrame *oldFrame = lastFrame;

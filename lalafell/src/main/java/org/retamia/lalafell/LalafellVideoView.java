@@ -20,34 +20,33 @@ import java.io.IOException;
 public class LalafellVideoView extends FrameLayout implements TextureView.SurfaceTextureListener {
 
     private TextureView mRenderView = null;
-    private LalafellPlayer mPlayer;
+    private LalafellPlayer mPlayer = null;
 
     public LalafellVideoView(@NonNull Context context) {
         super(context);
-        initVideoView(context);
     }
 
     public LalafellVideoView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        initVideoView(context);
     }
 
     public LalafellVideoView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        initVideoView(context);
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public LalafellVideoView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        initVideoView(context);
     }
 
-    private void initVideoView(Context context) {
+    private void initVideoView() {
         mPlayer = new LalafellPlayer();
     }
 
     public void setLiveUrl(String url, String stream) {
+
+        initVideoView();
+
         try {
             mPlayer.setDataSource(url + stream);
         } catch (IOException e) {
@@ -59,15 +58,22 @@ public class LalafellVideoView extends FrameLayout implements TextureView.Surfac
         if (mRenderView == null) {
             mRenderView = new TextureView(this.getContext());
             mRenderView.setSurfaceTextureListener(this);
-
-            addView(mRenderView);
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER);
+            mRenderView.setLayoutParams(lp);
         }
 
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-        mRenderView.setLayoutParams(lp);
-
+        addView(mRenderView);
         mPlayer.prepare();
-        //mRenderView.setRotation();
+    }
+
+    public void release() {
+
+        if (mPlayer == null) {
+            return;
+        }
+
+        mPlayer.release();
+        mPlayer = null;
     }
 
     @Override
@@ -77,17 +83,16 @@ public class LalafellVideoView extends FrameLayout implements TextureView.Surfac
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
-
+        mPlayer.setSurface(new Surface(surfaceTexture));
     }
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
-        mPlayer.setSurface(null);
         return true;
     }
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-
+        mPlayer.setSurface(new Surface(surfaceTexture));
     }
 }

@@ -10,38 +10,21 @@
 #include "__android.h"
 #include "live_player_type_def.h"
 #include "rtmp.h"
-#include "extractor/decoder/h264_hw_decoder.h"
-#include "extractor/renderer/gl_renderer.h"
 
 RTMPExtractor::RTMPExtractor()
 {
     rtmp = RTMP_Alloc();
-    decodeThread = new H264HwDecoder();
-    decodeThread->setPacketQueue(&videoPacketQueue);
-    decodeThread->setVideoFrameQueue(&videoRenderQueue);
-    decodeThread->start();
 
-    renderer = new GLRenderer();
-    renderer->setRenderFrameQueue(&videoRenderQueue);
-    renderer->start();
 }
 
 RTMPExtractor::~RTMPExtractor()
 {
-    decodeThread->requestInterruption();
-    decodeThread->wait();
-    delete decodeThread;
     RTMP_Free(rtmp);
 }
 
 void RTMPExtractor::setUrl(const std::string &url)
 {
     this->url = url;
-}
-
-void RTMPExtractor::setRenderSurface(ANativeWindow *nativeWindow)
-{
-    renderer->setRenderWindow(nativeWindow);
 }
 
 void RTMPExtractor::run()
@@ -91,7 +74,7 @@ void RTMPExtractor::run()
         memcpy(packet->data, rtmpPacket.m_body, packet->size);
         packet->type = RPacketType::H264_PACKET;
         packet->pts = static_cast<int64_t>(rtmpPacket.m_nTimeStamp) * 1000;
-        videoPacketQueue.enqueue(packet);
+        videoPacketQueue->enqueue(packet);
 
         /*if (rtmpPacket.m_packetType == RTMP_PACKET_TYPE_VIDEO) {
             packet->type = RPacketType::VIDEO;

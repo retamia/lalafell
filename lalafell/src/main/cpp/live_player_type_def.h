@@ -7,9 +7,6 @@
 
 #include <cstdint>
 
-#define MEDIA_CODEC_COLOR_FMT_YUV420P     19
-#define MEDIA_CODEC_CODEC_COLOR_FMT_NV21  21
-
 enum class RPacketType {
     H264_PACKET,
     AUDIO,

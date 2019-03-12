@@ -7,6 +7,12 @@
 
 #include <media/NdkMediaFormat.h>
 #include <media/NdkMediaCodec.h>
+#include <media/NdkMediaExtractor.h>
+#include <media/NdkImage.h>
+#include <media/NdkImageReader.h>
+#include <media/NdkMediaDataSource.h>
+#include <media/NdkMediaError.h>
+#include <media/NdkMediaMuxer.h>
 
 
 #include "__android.h"
@@ -15,16 +21,38 @@
 #include "live_player_type_def.h"
 #include "util/linked_blocking_queue.h"
 
-H264HwDecoder::H264HwDecoder() : mediaCodec(nullptr), mediaFormat(nullptr), dequeueThread(nullptr)
+static void mediacodec_input_available(AMediaCodec *codec, void *userdata, int32_t bufIndex)
 {
+
+}
+
+static void mediacodec_output_available(AMediaCodec *codec, void *userdata, int32_t bufIndex, AMediaCodecBufferInfo *bufferInfo)
+{
+
+}
+
+static void mediacodec_format_changed(AMediaCodec *codec, void *userdata, AMediaFormat *format)
+{
+
+}
+
+H264HwDecoder::H264HwDecoder()
+    : mediaCodec(nullptr)
+    , mediaFormat(nullptr)
+    , dequeueThread(nullptr)
+    , released(false)
+{
+    codecCallback.onAsyncInputAvailable = mediacodec_input_available;
+    codecCallback.onAsyncOutputAvailable = mediacodec_output_available;
+    codecCallback.onAsyncFormatChanged = mediacodec_format_changed;
 }
 
 H264HwDecoder::~H264HwDecoder()
 {
-    release();
+
 }
 
-void H264HwDecoder::setVideoFrameQueue(LinkedBlockingQueue<RFrame *> *videoFrameQueue)
+void H264HwDecoder::setFrameQueue(LinkedBlockingQueue<RFrame *> *videoFrameQueue)
 {
     this->renderQueue = videoFrameQueue;
 }
@@ -38,7 +66,7 @@ void H264HwDecoder::run()
 {
     RRtmpPacket *packet = nullptr;
 
-    while (!isInterruptionRequested()) {
+    while (!isInterruptionRequested() && !released) {
         packet = packetQueue->dequeue();
 
         if (packet->data[0] == 0x17 && packet->data[1] == 0x00) {
@@ -64,6 +92,8 @@ void H264HwDecoder::run()
 
 bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
 {
+
+
     uint8_t *sps = nullptr, *pps = nullptr;
     int spsLen, ppsLen;
 
@@ -96,15 +126,13 @@ bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
     AMediaFormat_setInt32(mediaFormat, AMEDIAFORMAT_KEY_HEIGHT, height);
     AMediaFormat_setBuffer(mediaFormat , "csd-0", sps, spsLen);
     AMediaFormat_setBuffer(mediaFormat, "csd-1", pps, ppsLen);
-    AMediaFormat_setInt32(mediaFormat , AMEDIAFORMAT_KEY_COLOR_FORMAT, MEDIA_CODEC_COLOR_FMT_YUV420P);
 
-    if (mediaCodec == nullptr) {
-        mediaCodec = AMediaCodec_createDecoderByType("video/avc");
-
-    }
+    AMediaFormat_setInt32(mediaFormat , AMEDIAFORMAT_KEY_COLOR_FORMAT, AMediaCodec);
 
     free(sps);
     free(pps);
+
+    mediaCodec = AMediaCodec_createDecoderByType("video/avc");
 
     int configure = AMediaCodec_configure(mediaCodec, mediaFormat, NULL, NULL, 0);
     if (configure != AMEDIA_OK) {
@@ -114,7 +142,6 @@ bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
     }
 
     if (dequeueThread == nullptr) {
-        AMediaCodec_start(mediaCodec);
         dequeueThread = new MediaCodecDequeueThread();
         dequeueThread->setMediaCodec(mediaCodec);
         dequeueThread->setVideoFrameQueue(renderQueue);
@@ -211,6 +238,14 @@ void H264HwDecoder::extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *ou
 
 void H264HwDecoder::release()
 {
+    if (dequeueThread != nullptr) {
+        dequeueThread->requestInterruption();
+        dequeueThread->wait();
+
+        delete dequeueThread;
+        dequeueThread = nullptr;
+    }
+
     if (mediaFormat != nullptr) {
         AMediaFormat_delete(mediaFormat);
         mediaFormat = nullptr;
@@ -222,11 +257,5 @@ void H264HwDecoder::release()
         mediaCodec = nullptr;
     }
 
-    if (dequeueThread != nullptr) {
-        dequeueThread->requestInterruption();
-        dequeueThread->wait();
-
-        delete dequeueThread;
-        dequeueThread = nullptr;
-    }
+    released = true;
 }

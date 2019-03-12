@@ -7,8 +7,14 @@
 
 #include <string>
 
+#include "util/linked_blocking_queue.h"
+
 class RTMPExtractor;
 class ANativeWindow;
+class H264HwDecoder;
+class GLRenderer;
+class RRtmpPacket;
+class RFrame;
 
 class LivePlayer {
 public:
@@ -25,6 +31,15 @@ private:
     RTMPExtractor *rtmpExtractor;
     std::string url;
 
+    H264HwDecoder *videoDecodeThread;
+    GLRenderer    *renderer;
+
+
+    LinkedBlockingQueue<RRtmpPacket *> videoPacketQueue;
+    LinkedBlockingQueue<RRtmpPacket *> audioPacketQueue;
+
+    LinkedBlockingQueue<RFrame *>      videoRenderQueue;
+    LinkedBlockingQueue<RFrame *>      audioRenderQueue;
 };
 
 

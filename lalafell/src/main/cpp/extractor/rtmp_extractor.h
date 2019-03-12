@@ -8,24 +8,22 @@
 #include <string>
 
 #include "util/thread.h"
+
 #include "util/linked_blocking_queue.h"
 
 struct ANativeWindow;
 
-class H264HwDecoder;
-class GLRenderer;
 struct RRtmpPacket;
-struct RFrame;
 struct RTMP;
 
-class RTMPExtractor : public RThread{
+class RTMPExtractor : public RThread {
 public:
     explicit RTMPExtractor();
     virtual ~RTMPExtractor();
 
     void setUrl(const std::string &url);
-
-    void setRenderSurface(ANativeWindow *nativeWindow);
+    void setVideoPacketQueue(LinkedBlockingQueue<RRtmpPacket *> *packetQueue) { this->videoPacketQueue = packetQueue; }
+    void setAudioPacketQueue(LinkedBlockingQueue<RRtmpPacket *> *packetQueue) { this->audioPacketQueue = packetQueue; }
 
 protected:
     void run() override;
@@ -36,12 +34,8 @@ private:
 private:
     RTMP *rtmp;
     std::string url;
-    LinkedBlockingQueue<RRtmpPacket *> videoPacketQueue;
-    LinkedBlockingQueue<RRtmpPacket *> audioPacketQueue;
-    LinkedBlockingQueue<RFrame *>      videoRenderQueue;
-    LinkedBlockingQueue<RFrame *>      audioRenderQueue;
-    H264HwDecoder *decodeThread;
-    GLRenderer    *renderer;
+    LinkedBlockingQueue<RRtmpPacket *> *videoPacketQueue;
+    LinkedBlockingQueue<RRtmpPacket *> *audioPacketQueue;
 
 };
 

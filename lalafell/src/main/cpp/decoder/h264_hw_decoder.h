@@ -5,6 +5,10 @@
 #ifndef LIVEPLAYER_H264_HW_DECODER_H
 #define LIVEPLAYER_H264_HW_DECODER_H
 
+#include <atomic>
+
+#include <media/NdkMediaCodec.h>
+
 #include "util/thread.h"
 
 struct RFrame;
@@ -23,8 +27,10 @@ public:
     explicit H264HwDecoder();
     virtual ~H264HwDecoder();
 
-    void setVideoFrameQueue(LinkedBlockingQueue<RFrame *> *videoFrameQueue);
+    void setFrameQueue(LinkedBlockingQueue<RFrame *> *videoFrameQueue);
     void setPacketQueue(LinkedBlockingQueue<RRtmpPacket *> *queue);
+
+    void release();
 
 protected:
     void run() override;
@@ -34,7 +40,7 @@ private:
     void decodeFrame(RRtmpPacket *packet);
     void extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *outSpsLen, uint8_t **outPps, int *outPpsLen);
 
-    void release();
+
 
 private:
     LinkedBlockingQueue<RRtmpPacket *> *packetQueue;
@@ -44,6 +50,10 @@ private:
 
     AMediaCodec *mediaCodec;
     AMediaFormat *mediaFormat;
+
+    AMediaCodecOnAsyncNotifyCallback codecCallback;
+
+    std::atomic_bool released;
 };
 
 

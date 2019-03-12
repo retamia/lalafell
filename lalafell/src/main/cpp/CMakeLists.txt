@@ -9,21 +9,23 @@ include_directories(libs/rtmp)
 
 set(LIB_LIVE_PLAYER_HEADERS
         live_player_type_def.h
+        oges/oges_shader.h
         util/thread.h
         util/linked_blocking_queue.h
-        extractor/decoder/sps_decode.h
-        extractor/decoder/media_codec_dequeue_thread.h
-        extractor/decoder/h264_hw_decoder.h
-        extractor/renderer/gl_renderer.h
+        decoder/sps_decode.h
+        decoder/media_codec_dequeue_thread.h
+        decoder/h264_hw_decoder.h
+        renderer/gl_renderer.h
         extractor/rtmp_extractor.h
         live_player.h)
 
 set(LIB_LIVE_PLAYER_SOURCES
         util/thread.cpp
-        extractor/decoder/media_codec_dequeue_thread.cpp
-        extractor/decoder/h264_hw_decoder.cpp
+        oges/oges_shader.cpp
+        decoder/media_codec_dequeue_thread.cpp
+        decoder/h264_hw_decoder.cpp
         extractor/rtmp_extractor.cpp
-        extractor/renderer/gl_renderer.cpp
+        renderer/gl_renderer.cpp
         live_player.cpp
         live_player_jni.cpp)
 
