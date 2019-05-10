@@ -1,6 +1,7 @@
 package org.retamia.lalafell.player;
 
 
+import android.graphics.SurfaceTexture;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
@@ -23,12 +24,12 @@ public class LalafellPlayer {
         this.nativePlayer = nAllocLivePlayer();
     }
 
-    public void setDisplay(SurfaceHolder sh) {
-        this.setSurface(sh.getSurface());
+    public void setRenderSurface(Surface surface) {
+        nPlayerSetSurface(nativePlayer, surface);
     }
 
-    public void setSurface(Surface surface) {
-        nPlayerSetSurface(nativePlayer, surface);
+    public void setRenderSurface(SurfaceTexture surfaceTexture) {
+        nPlayerSetSurfaceTexture(nativePlayer, surfaceTexture);
     }
 
     public void setVideoScalingMode(int mode) {
@@ -75,4 +76,6 @@ public class LalafellPlayer {
     private native void nPreparePlayer(long pointer, String url);
 
     private native void nPlayerSetSurface(long pointer, Surface surface);
+
+    private native void nPlayerSetSurfaceTexture(long pointer, SurfaceTexture surfaceTexture);
 }

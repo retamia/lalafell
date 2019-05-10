@@ -11,8 +11,6 @@
 
 #include "util/linked_blocking_queue.h"
 
-struct ANativeWindow;
-
 struct RRtmpPacket;
 struct RTMP;
 

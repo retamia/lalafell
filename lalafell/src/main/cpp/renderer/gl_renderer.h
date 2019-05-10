@@ -15,6 +15,7 @@
 
 struct ANativeWindow;
 struct RFrame;
+struct ASurfaceTexture;
 
 template<typename T>
 class LinkedBlockingQueue;
@@ -27,18 +28,20 @@ public:
     explicit GLRenderer();
     virtual ~GLRenderer();
     void setRenderFrameQueue(LinkedBlockingQueue<RFrame *> *queue);
-    void setRenderWindow(ANativeWindow *window);
+    void setRenderSurface(ASurfaceTexture *surfaceTexture);
+    void setRenderSurface(ANativeWindow *window);
 
 protected:
     void run() override;
 
 private:
     void initEGL();
+    void initRenderSurface();
     void drawFrame();
 
 private:
 
-    JNIEnv *jniEnv;
+    ASurfaceTexture *surfaceTexture;
     ANativeWindow *window;
     LinkedBlockingQueue<RFrame *> *frameQueue;
     RFrame *lastFrame;
@@ -55,6 +58,12 @@ private:
     OpenGLESShader *shader;
 
     std::atomic_bool refreshSurface;
+
+    GLint aVertexInLocation;
+    GLint aTextureInLocation;
+    GLint uTextureYLocation;
+    GLint uTextureULocation;
+    GLint uTextureVLocation;
 };
 
 

@@ -35,13 +35,9 @@ H264HwDecoder::H264HwDecoder()
     , mediaFormat(nullptr)
     , dequeueThread(nullptr)
     , released(false)
+    , width(0)
+    , height(0)
 {
-    /**
-     * Android 8.0
-     * codecCallback.onAsyncInputAvailable = mediacodec_input_available;
-     * codecCallback.onAsyncOutputAvailable = mediacodec_output_available;
-     * codecCallback.onAsyncFormatChanged = mediacodec_format_changed;
-     */
 }
 
 H264HwDecoder::~H264HwDecoder()
@@ -90,9 +86,8 @@ void H264HwDecoder::run()
 bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
 {
 
-
     uint8_t *sps = nullptr, *pps = nullptr;
-    int spsLen, ppsLen;
+    size_t spsLen, ppsLen;
 
     extractSpsPps(packet, &sps, &spsLen, &pps, &ppsLen);
 
@@ -113,30 +108,24 @@ bool H264HwDecoder::decodeMetadata(RRtmpPacket *packet)
         return false;
     }
 
-    if (mediaFormat != nullptr) {
-        AMediaFormat_delete(mediaFormat);
+    if ((this->width != width || this->height != height)) {
+        reconfigure(width, height, sps, spsLen, pps, ppsLen);
+
+        if (mediaCodec == nullptr) {
+            mediaCodec = AMediaCodec_createDecoderByType("video/avc");
+        }
+
+        int configure = AMediaCodec_configure(mediaCodec, mediaFormat, NULL, NULL, 0);
+
+        if (configure != AMEDIA_OK) {
+            release();
+            LOGE("mediaccodec configure error");
+            return false;
+        }
     }
-
-    mediaFormat = AMediaFormat_new();
-    AMediaFormat_setString(mediaFormat, AMEDIAFORMAT_KEY_MIME, "video/avc");
-    AMediaFormat_setInt32(mediaFormat, AMEDIAFORMAT_KEY_WIDTH, width);
-    AMediaFormat_setInt32(mediaFormat, AMEDIAFORMAT_KEY_HEIGHT, height);
-    AMediaFormat_setBuffer(mediaFormat , "csd-0", sps, spsLen);
-    AMediaFormat_setBuffer(mediaFormat, "csd-1", pps, ppsLen);
-
-    AMediaFormat_setInt32(mediaFormat , AMEDIAFORMAT_KEY_COLOR_FORMAT, MEDIA_CODEC_COLOR_FMT_YUV420P);
 
     free(sps);
     free(pps);
-
-    mediaCodec = AMediaCodec_createDecoderByType("video/avc");
-
-    int configure = AMediaCodec_configure(mediaCodec, mediaFormat, NULL, NULL, 0);
-    if (configure != AMEDIA_OK) {
-        release();
-        LOGE("mediaccodec configure error");
-        return false;
-    }
 
     if (dequeueThread == nullptr) {
         dequeueThread = new MediaCodecDequeueThread();
@@ -194,7 +183,7 @@ void H264HwDecoder::decodeFrame(RRtmpPacket *packet)
     }
 }
 
-void H264HwDecoder::extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *outSpsLen, uint8_t **outPps, int *outPpsLen)
+void H264HwDecoder::extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, size_t *outSpsLen, uint8_t **outPps, size_t *outPpsLen)
 {
     uint8_t *data = packet->data;
     static uint8_t startCode[4] = {0x00, 0x00, 0x00, 0x01};
@@ -255,4 +244,29 @@ void H264HwDecoder::release()
     }
 
     released = true;
+}
+
+void H264HwDecoder::reconfigure(int width,
+                                int height,
+                                uint8_t *sps,
+                                size_t spsLen,
+                                uint8_t *pps,
+                                size_t ppsLen)
+{
+    if (mediaFormat != nullptr) {
+        AMediaFormat_delete(mediaFormat);
+    }
+
+    mediaFormat = AMediaFormat_new();
+    AMediaFormat_setString(mediaFormat, AMEDIAFORMAT_KEY_MIME, "video/avc");
+    AMediaFormat_setInt32(mediaFormat, AMEDIAFORMAT_KEY_WIDTH, width);
+    AMediaFormat_setInt32(mediaFormat, AMEDIAFORMAT_KEY_HEIGHT, height);
+    AMediaFormat_setBuffer(mediaFormat , "csd-0", sps, spsLen);
+    AMediaFormat_setBuffer(mediaFormat, "csd-1", pps, ppsLen);
+
+    AMediaFormat_setInt32(mediaFormat , AMEDIAFORMAT_KEY_COLOR_FORMAT, MEDIA_CODEC_COLOR_FMT_YUV420P);
+
+    if (mediaCodec != nullptr) {
+        AMediaCodec_stop(mediaCodec);
+    }
 }

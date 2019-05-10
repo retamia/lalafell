@@ -2,15 +2,16 @@
 // Created by retamia on 2018/10/18.
 //
 
-#include "live_player.h"
+#include "lalafell_player.h"
 
 #include "extractor/rtmp_extractor.h"
 #include "decoder/h264_hw_decoder.h"
 #include "renderer/gl_renderer.h"
 
 #include "rtmp.h"
+#include "__android.h"
 
-LivePlayer::LivePlayer() {
+LalaFellPlayer::LalaFellPlayer() {
     rtmpExtractor = new RTMPExtractor();
     rtmpExtractor->setVideoPacketQueue(&videoPacketQueue);
     rtmpExtractor->setAudioPacketQueue(&audioPacketQueue);
@@ -26,9 +27,11 @@ LivePlayer::LivePlayer() {
 
     //@TODO audio decode
     //@TODO audio output
+
+    LOGD("init lalafell player");
 }
 
-LivePlayer::~LivePlayer() {
+LalaFellPlayer::~LalaFellPlayer() {
     rtmpExtractor->requestInterruption();
     rtmpExtractor->wait();
     delete rtmpExtractor;
@@ -41,19 +44,21 @@ LivePlayer::~LivePlayer() {
     videoDecodeThread->wait();
     videoDecodeThread->release();
     delete videoDecodeThread;
+
+    LOGD("delete lalafell player");
 }
 
-void LivePlayer::prepare(const char *url) {
+void LalaFellPlayer::prepare(const char *url) {
     this->url = std::string(url);
     rtmpExtractor->setUrl(this->url);
     rtmpExtractor->start();
 }
 
-void LivePlayer::play() {
+void LalaFellPlayer::play() {
 
 }
 
-void LivePlayer::release() {
+void LalaFellPlayer::release() {
     rtmpExtractor->requestInterruption();
     rtmpExtractor->wait();
 
@@ -62,9 +67,18 @@ void LivePlayer::release() {
 
     videoDecodeThread->requestInterruption();
     videoDecodeThread->wait();
+
+    LOGD("release lalafell player");
 }
 
-void LivePlayer::setRendererSurface(ANativeWindow *window)
+void LalaFellPlayer::setRendererSurface(ASurfaceTexture *surfaceTexture)
 {
-    renderer->setRenderWindow(window);
+    LOGD("lalafell player set renderer surface: ASurfaceTexture");
+    renderer->setRenderSurface(surfaceTexture);
+}
+
+void LalaFellPlayer::setRendererSurface(ANativeWindow *window)
+{
+    LOGD("lalafell player set renderer surface: ANativeWindow");
+    renderer->setRenderSurface(window);
 }

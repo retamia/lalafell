@@ -11,6 +11,15 @@ OpenGLESShader::OpenGLESShader() : linked(false)
 
 }
 
+OpenGLESShader::~OpenGLESShader()
+{
+    for (GLuint shader: shaders) {
+        glDeleteShader(shader);
+    }
+
+    shaders.clear();
+}
+
 bool OpenGLESShader::addShaderFromSourceCode(ShaderType type, const char *source)
 {
     GLuint shader;
@@ -22,12 +31,12 @@ bool OpenGLESShader::addShaderFromSourceCode(ShaderType type, const char *source
     } else {
         return false;
     }
-
+    glShaderSource(shader, 1, &source, nullptr);
     glCompileShader(shader);
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
     if (!success) {
-        LOGE("compile gl error");
+        LOGE("compile shader error");
         return false;
     }
 
@@ -49,28 +58,24 @@ void OpenGLESShader::setAttributeValue(int location, GLfloat value)
 {
     GLfloat buffer[] = {value};
     glVertexAttribPointer(location, 1, GL_FLOAT, GL_FALSE, 0, &buffer);
-    glEnableVertexAttribArray(location);
 }
 
 void OpenGLESShader::setAttributeValue(int location, GLfloat x, GLfloat y)
 {
     GLfloat buffer[] = {x, y};
     glVertexAttribPointer(location, 2, GL_FLOAT, GL_FALSE, 0, &buffer);
-    glEnableVertexAttribArray(location);
 }
 
 void OpenGLESShader::setAttributeValue(int location, GLfloat x, GLfloat y, GLfloat z)
 {
     GLfloat buffer[] = {x, y, z};
     glVertexAttribPointer(location, 3, GL_FLOAT, GL_FALSE, 0, &buffer);
-    glEnableVertexAttribArray(location);
 }
 
 void OpenGLESShader::setAttributeValue(int location, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
     GLfloat buffer[] = {x, y, z, w};
     glVertexAttribPointer(location, 4, GL_FLOAT, GL_FALSE, 0, &buffer);
-    glEnableVertexAttribArray(location);
 }
 
 void OpenGLESShader::setUniformValue(int location, GLint value)
@@ -81,6 +86,36 @@ void OpenGLESShader::setUniformValue(int location, GLint value)
 void OpenGLESShader::setUniformValue(int location, GLfloat value)
 {
     glUniform1f(location, value);
+}
+
+void OpenGLESShader::setUniformValue(int location, GLfloat x, GLfloat y, GLfloat z)
+{
+    glUniform3f(location, x, y, z);
+}
+
+void OpenGLESShader::setUniformValue(int location, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
+{
+    glUniform4f(location, x, y, z, w);
+}
+
+void OpenGLESShader::setAttributeArray(int location, const GLfloat *values, int tupleSize, int stride)
+{
+    glVertexAttribPointer(location, tupleSize, GL_FLOAT, GL_FALSE, stride, values);
+}
+
+void OpenGLESShader::setAttributeArray(int location, GLenum type, const void *values, int tupleSize, int stride)
+{
+    glVertexAttribPointer(location, tupleSize, type, GL_FALSE, stride, values);
+}
+
+void OpenGLESShader::enableAttributeArray(int location)
+{
+    glEnableVertexAttribArray(location);
+}
+
+void OpenGLESShader::disableAttributeArray(int location)
+{
+    glDisableVertexAttribArray(location);
 }
 
 bool OpenGLESShader::link()

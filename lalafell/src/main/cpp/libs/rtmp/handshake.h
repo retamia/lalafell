@@ -102,7 +102,7 @@ static const uint8_t GenuineFPKey[] = {
   0x47, 0x65, 0x6E, 0x75, 0x69, 0x6E, 0x65, 0x20, 0x41, 0x64, 0x6F, 0x62,
     0x65, 0x20, 0x46, 0x6C,
   0x61, 0x73, 0x68, 0x20, 0x50, 0x6C, 0x61, 0x79, 0x65, 0x72, 0x20, 0x30,
-    0x30, 0x31,			/* Genuine Adobe Flash Player 001 */
+    0x30, 0x31,			/* Genuine Adobe Flash LalaFellPlayer 001 */
   0xF0, 0xEE,
   0xC2, 0x4A, 0x80, 0x68, 0xBE, 0xE8, 0x2E, 0x00, 0xD0, 0xD1, 0x02, 0x9E,
     0x7E, 0x57, 0x6E, 0xEC,
@@ -1206,7 +1206,7 @@ SHandShake(RTMP * r)
   uptime = ntohl(uptime);
 
   RTMP_Log(RTMP_LOGDEBUG, "%s: Client Uptime : %d", __FUNCTION__, uptime);
-  RTMP_Log(RTMP_LOGDEBUG, "%s: Player Version: %d.%d.%d.%d", __FUNCTION__, clientsig[4],
+  RTMP_Log(RTMP_LOGDEBUG, "%s: LalaFellPlayer Version: %d.%d.%d.%d", __FUNCTION__, clientsig[4],
       clientsig[5], clientsig[6], clientsig[7]);
 
   if (FP9HandShake)
@@ -1383,7 +1383,7 @@ SHandShake(RTMP * r)
 	}
       else
 	{
-	  RTMP_Log(RTMP_LOGDEBUG, "%s: Genuine Adobe Flash Player", __FUNCTION__);
+	  RTMP_Log(RTMP_LOGDEBUG, "%s: Genuine Adobe Flash LalaFellPlayer", __FUNCTION__);
 	}
 
       if (encrypted)

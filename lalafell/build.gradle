@@ -5,7 +5,7 @@ android {
 
     defaultConfig {
         minSdkVersion 22
-        targetSdkVersion 26
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
@@ -13,7 +13,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                cppFlags "-std=c++11 -frtti"
+                arguments "-DANDROID_CPP_FEATURES=rtti"
             }
         }
 
@@ -26,6 +26,10 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+            jniDebuggable true
         }
     }
 

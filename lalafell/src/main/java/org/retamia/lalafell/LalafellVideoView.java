@@ -6,11 +6,9 @@ import android.graphics.SurfaceTexture;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Surface;
 import android.view.TextureView;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 
 import org.retamia.lalafell.player.LalafellPlayer;
@@ -43,26 +41,26 @@ public class LalafellVideoView extends FrameLayout implements TextureView.Surfac
         mPlayer = new LalafellPlayer();
     }
 
-    public void setLiveUrl(String url, String stream) {
+    public void setLiveUrl(String url) {
 
         initVideoView();
 
         try {
-            mPlayer.setDataSource(url + stream);
+            mPlayer.setDataSource(url);
         } catch (IOException e) {
 
         }
     }
 
-    public void open() {
+    public void prepare() {
         if (mRenderView == null) {
             mRenderView = new TextureView(this.getContext());
             mRenderView.setSurfaceTextureListener(this);
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER);
             mRenderView.setLayoutParams(lp);
+            addView(mRenderView);
         }
 
-        addView(mRenderView);
         mPlayer.prepare();
     }
 
@@ -78,21 +76,24 @@ public class LalafellVideoView extends FrameLayout implements TextureView.Surfac
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height) {
-        mPlayer.setSurface(new Surface(surfaceTexture));
+        mPlayer.setRenderSurface(new Surface(mRenderView.getSurfaceTexture()));
     }
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
-        mPlayer.setSurface(new Surface(surfaceTexture));
+
+        //@TODO change player size;
+        //mPlayer.
     }
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
+        mPlayer.stop();
         return true;
     }
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
-        mPlayer.setSurface(new Surface(surfaceTexture));
+        mPlayer.setRenderSurface(new Surface(mRenderView.getSurfaceTexture()));
     }
 }

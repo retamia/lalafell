@@ -10,22 +10,24 @@
 #include "util/linked_blocking_queue.h"
 
 class RTMPExtractor;
-class ANativeWindow;
 class H264HwDecoder;
 class GLRenderer;
 class RRtmpPacket;
 class RFrame;
 
-class LivePlayer {
+struct ASurfaceTexture;
+struct ANativeWindow;
+
+class LalaFellPlayer {
 public:
-    explicit LivePlayer();
-    virtual ~LivePlayer();
+    explicit LalaFellPlayer();
+    virtual ~LalaFellPlayer();
 
     void prepare(const char *url);
     void play();
     void release();
+    void setRendererSurface(ASurfaceTexture *surfaceTexture);
     void setRendererSurface(ANativeWindow *window);
-
 
 private:
     RTMPExtractor *rtmpExtractor;

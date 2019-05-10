@@ -4,6 +4,7 @@
 
 
 
+#include <libs/rtmp/log.h>
 #include "rtmp_extractor.h"
 
 
@@ -11,10 +12,14 @@
 #include "live_player_type_def.h"
 #include "rtmp.h"
 
+static void rtmp_log(int level, const char *fmt, va_list args)
+{
+
+}
+
 RTMPExtractor::RTMPExtractor()
 {
     rtmp = RTMP_Alloc();
-
 }
 
 RTMPExtractor::~RTMPExtractor()
@@ -32,7 +37,8 @@ void RTMPExtractor::run()
 
     openRTMP();
 
-    RTMPPacket rtmpPacket = {0};
+    RTMPPacket rtmpPacket;
+    RTMPPacket_Alloc(&rtmpPacket, 4096);
 
     while (!isInterruptionRequested()) {
 
@@ -47,7 +53,6 @@ void RTMPExtractor::run()
         }
 
         if (!RTMPPacket_IsReady(&rtmpPacket)) {
-            LOGW("packet not ready");
             continue;
         }
 
@@ -58,7 +63,6 @@ void RTMPExtractor::run()
 
         if (rtmpPacket.m_body == nullptr) {
             RTMPPacket_Free(&rtmpPacket);
-            LOGW("body is empty");
             continue;
         }
 
@@ -90,6 +94,7 @@ void RTMPExtractor::run()
     LOGD("rtmp extractor finished");
 }
 
+// @TODO swf
 bool RTMPExtractor::openRTMP()
 {
 
@@ -97,6 +102,11 @@ bool RTMPExtractor::openRTMP()
 
     rtmp->Link.timeout = 5;
     rtmp->Link.lFlags |= RTMP_LF_LIVE;
+
+#ifdef NDEBUG
+    RTMP_LogSetLevel(RTMP_LOGERROR);
+    RTMP_LogSetCallback(rtmp_log);
+#endif
 
     int ret = RTMP_SetupURL(rtmp, (char *) url.c_str());
 
@@ -121,3 +131,5 @@ bool RTMPExtractor::openRTMP()
 
     return true;
 }
+
+

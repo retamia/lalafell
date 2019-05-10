@@ -1,17 +1,20 @@
 
 #include <jni.h>
 #include <string>
+
+#include <android/surface_texture_jni.h>
 #include <android/native_window_jni.h>
 
-#include "live_player.h"
+#include <android/log.h>
+#include "lalafell_player.h"
 
-#define PLAYER(p) ((LivePlayer *)p)
+#define PLAYER(p) ((LalaFellPlayer *) p)
 
 extern "C" {
 JNIEXPORT jlong JNICALL
 Java_org_retamia_lalafell_player_LalafellPlayer_nAllocLivePlayer(JNIEnv *env, jobject thiz)
 {
-    LivePlayer *player = new LivePlayer();
+    LalaFellPlayer *player = new LalaFellPlayer();
     return (jlong)player;
 }
 
@@ -34,6 +37,16 @@ Java_org_retamia_lalafell_player_LalafellPlayer_nReleaseLivePlayer(JNIEnv *env, 
 {
     PLAYER(p)->release();
     delete PLAYER(p);
+}
+
+JNIEXPORT void JNICALL
+Java_org_retamia_lalafell_player_LalafellPlayer_nPlayerSetSurfaceTexture(JNIEnv *env, jobject thiz, jlong p, jobject surfaceTexture)
+{
+#if __ANDROID_API__ >= 28
+    PLAYER(p)->setRendererSurface(ASurfaceTexture_fromSurfaceTexture(env, surfaceTexture));
+#else
+    __android_log_print(ANDROID_LOG_WARN, "lalafell jni", "android api version must greater than 28");
+#endif
 }
 
 JNIEXPORT void JNICALL

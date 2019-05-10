@@ -38,8 +38,8 @@ protected:
 private:
     bool decodeMetadata(RRtmpPacket *packet);
     void decodeFrame(RRtmpPacket *packet);
-    void extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, int *outSpsLen, uint8_t **outPps, int *outPpsLen);
-
+    void extractSpsPps(RRtmpPacket *packet, uint8_t **outSps, size_t *outSpsLen, uint8_t **outPps, size_t *outPpsLen);
+    void reconfigure(int width, int height, uint8_t *sps, size_t spsLen, uint8_t *pps, size_t ppsLen);
 
 
 private:
@@ -48,10 +48,11 @@ private:
 
     MediaCodecDequeueThread *dequeueThread;
 
+    int width;
+    int height;
+
     AMediaCodec *mediaCodec;
     AMediaFormat *mediaFormat;
-
-    AMediaCodecOnAsyncNotifyCallback codecCallback;
 
     std::atomic_bool released;
 };

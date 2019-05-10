@@ -103,7 +103,7 @@ const char RTMPProtocolStringsLower[][7] = {
 };
 
 static const char *RTMPT_cmds[] = {
-    "open",
+    "prepare",
     "send",
     "idle",
     "close"
@@ -2234,7 +2234,7 @@ SendPlay(RTMP *r)
      *
      * start: -2, -1, 0, positive number
      *  -2: looks for a live stream, then a recorded stream,
-     *      if not found any open a live stream
+     *      if not found any prepare a live stream
      *  -1: plays a live stream
      * >=0: plays a recorded streams from 'start' milliseconds
      */
@@ -3867,7 +3867,7 @@ SHandShake(RTMP *r)
     uptime = ntohl(uptime);
 
     RTMP_Log(RTMP_LOGDEBUG, "%s: Client Uptime : %d", __FUNCTION__, uptime);
-    RTMP_Log(RTMP_LOGDEBUG, "%s: Player Version: %d.%d.%d.%d", __FUNCTION__,
+    RTMP_Log(RTMP_LOGDEBUG, "%s: LalaFellPlayer Version: %d.%d.%d.%d", __FUNCTION__,
              clientsig[4], clientsig[5], clientsig[6], clientsig[7]);
 
     /* 2nd part of handshake */
