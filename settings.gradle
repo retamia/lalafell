@@ -1,1 +1,1 @@
-include ':app', ':lalafell'
+include ':app', ':lalafell_player', ':lalafell_record'

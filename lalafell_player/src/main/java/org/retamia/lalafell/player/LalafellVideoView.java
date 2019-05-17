@@ -1,4 +1,4 @@
-package org.retamia.lalafell;
+package org.retamia.lalafell.player;
 
 import android.annotation.TargetApi;
 import android.content.Context;

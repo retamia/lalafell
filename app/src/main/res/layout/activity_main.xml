@@ -6,10 +6,10 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <org.retamia.lalafell.LalafellVideoView
-        android:id="@+id/video_view"
+    <org.retamia.lalafell.record.LalafellRecordView
+        android:id="@+id/record_view"
         android:layout_width="match_parent"
-        android:layout_height="240dp">
-    </org.retamia.lalafell.LalafellVideoView>
+        android:layout_height="match_parent">
+    </org.retamia.lalafell.record.LalafellRecordView>
 
 </android.support.constraint.ConstraintLayout>

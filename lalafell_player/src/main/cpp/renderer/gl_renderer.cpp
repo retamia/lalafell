@@ -72,6 +72,12 @@ GLRenderer::GLRenderer()
 
 GLRenderer::~GLRenderer()
 {
+    if (window != nullptr) {
+        ANativeWindow_release(window);
+        window = nullptr;
+    }
+
+    terminateEGL();
     delete shader;
 }
 
@@ -161,6 +167,12 @@ void GLRenderer::setRenderSurface(ASurfaceTexture *surfaceTexture)
 void GLRenderer::setRenderSurface(ANativeWindow *window)
 {
     refreshSurface = false;
+
+    if (this->window != nullptr) {
+        ANativeWindow_release(this->window);
+    }
+
+    ANativeWindow_acquire(window);
     this->window = window;
     initRenderSurface();
     refreshSurface = true;
@@ -186,6 +198,28 @@ void GLRenderer::initRenderSurface()
     glViewport(0, 0, width, height);
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+}
+
+void GLRenderer::terminateEGL()
+{
+    if (this->display != EGL_NO_DISPLAY) {
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+
+        if (context != EGL_NO_CONTEXT) {
+            eglDestroyContext(display, context);
+        }
+
+        if (surface != EGL_NO_SURFACE) {
+            eglDestroySurface(display, surface);
+        }
+
+        eglTerminate(display);
+        eglReleaseThread();
+    }
+
+    context = EGL_NO_CONTEXT;
+    surface = EGL_NO_SURFACE;
+    display = EGL_NO_DISPLAY;
 }
 
 void GLRenderer::run()
@@ -215,6 +249,7 @@ void GLRenderer::run()
 
 void GLRenderer::drawFrame()
 {
+
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     shader->setAttributeArray(aVertexInLocation, vertexPoints, 2, sizeof(GLfloat) * 4);
     shader->enableAttributeArray(aVertexInLocation);

@@ -36,6 +36,7 @@ protected:
 
 private:
     void initEGL();
+    void terminateEGL();
     void initRenderSurface();
     void drawFrame();
 
