@@ -3,6 +3,7 @@ package org.retamia.lalafell.record;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.opengl.GLSurfaceView;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
@@ -18,14 +19,15 @@ import org.retamia.lalafell.record.scene.SceneListener;
 import org.retamia.lalafell.record.source.Source;
 import org.retamia.lalafell.record.source.CameraSource;
 
-public class LalafellRecordView extends FrameLayout implements TextureView.SurfaceTextureListener {
+public class LalafellRecordView extends FrameLayout {
 
-    private TextureView textureView;
+    private GLSurfaceView glSurfaceView;
     private Scene defaultScene;
 
     private CameraSource cameraSource;
 
     private PreviewOutput previewOutput;
+    private PreviewOutput.PreviewOutputRenderer previewOutputRenderer;
     private MediaCodecOutput mediaCodecOutput;
 
     public LalafellRecordView(@NonNull Context context) {
@@ -57,37 +59,26 @@ public class LalafellRecordView extends FrameLayout implements TextureView.Surfa
         defaultScene.setListener(sceneListener);
         defaultScene.init();
 
-        textureView = new TextureView(getContext());
-        textureView.setSurfaceTextureListener(this);
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.CENTER);
-        textureView.setLayoutParams(lp);
-        addView(textureView);
+        glSurfaceView = new GLSurfaceView(getContext());
+        glSurfaceView.setEGLContextClientVersion(2);
+        previewOutputRenderer = new PreviewOutput.PreviewOutputRenderer();
+        glSurfaceView.setRenderer(previewOutputRenderer);
+
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT, Gravity.CENTER);
+        glSurfaceView.setLayoutParams(lp);
+        addView(glSurfaceView);
+    }
+
+    public void pause() {
+        glSurfaceView.onPause();
+    }
+
+    public void resume() {
+        glSurfaceView.onResume();
     }
 
     public void release() {
         defaultScene.release();
-    }
-
-    @Override
-    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        previewOutput.setSurfaceTexture(surface);
-        defaultScene.load();
-    }
-
-    @Override
-    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
-    }
-
-    @Override
-    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        defaultScene.remove();
-        return false;
-    }
-
-    @Override
-    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-        previewOutput.setSurfaceTexture(surface);
     }
 
     private SceneListener sceneListener = new SceneListener() {
