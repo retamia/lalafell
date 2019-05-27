@@ -1,20 +1,18 @@
 package org.retamia.lalafell.record.output.opengl.base;
 
-import android.support.annotation.IdRes;
 import android.util.Log;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import org.retamia.lalafell.record.utils.ByteBufferUtils;
+
+
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static android.opengl.GLES20.GL_COMPILE_STATUS;
-import static android.opengl.GLES20.GL_FALSE;
 import static android.opengl.GLES20.GL_FLOAT;
 import static android.opengl.GLES20.GL_FRAGMENT_SHADER;
-import static android.opengl.GLES20.GL_INVALID_VALUE;
+
 import static android.opengl.GLES20.GL_LINK_STATUS;
 import static android.opengl.GLES20.GL_VERTEX_SHADER;
 import static android.opengl.GLES20.glAttachShader;
@@ -25,6 +23,7 @@ import static android.opengl.GLES20.glDeleteShader;
 import static android.opengl.GLES20.glDisableVertexAttribArray;
 import static android.opengl.GLES20.glEnableVertexAttribArray;
 import static android.opengl.GLES20.glGetAttribLocation;
+import static android.opengl.GLES20.glGetProgramiv;
 import static android.opengl.GLES20.glGetShaderiv;
 import static android.opengl.GLES20.glGetUniformLocation;
 import static android.opengl.GLES20.glLinkProgram;
@@ -33,12 +32,11 @@ import static android.opengl.GLES20.glUniform1f;
 import static android.opengl.GLES20.glUniform1i;
 import static android.opengl.GLES20.glUniform3f;
 import static android.opengl.GLES20.glUniform4f;
+import static android.opengl.GLES20.glUniformMatrix4fv;
 import static android.opengl.GLES20.glUseProgram;
 import static android.opengl.GLES20.glVertexAttribPointer;
 
 public final class OpenGLESShaderProgram {
-
-    public static final int BYTES_PER_FLOAT = 4;
 
     private static final String TAG = OpenGLESShaderProgram.class.getName();
 
@@ -46,7 +44,7 @@ public final class OpenGLESShaderProgram {
     List<Integer>   shaders = new ArrayList<>();
     int             program = -1;
 
-    enum ShaderType {
+    public enum ShaderType {
         Vertex,
         Fragment,
     }
@@ -86,44 +84,29 @@ public final class OpenGLESShaderProgram {
     }
 
     public void setAttributeValue(int location, float value) {
-        final FloatBuffer buffer = ByteBuffer
-                .allocateDirect(BYTES_PER_FLOAT)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(value);
+        float []values = {value};
+        final FloatBuffer buffer = ByteBufferUtils.FromFloat(values);
 
         glVertexAttribPointer(location, 1, GL_FLOAT, false, 0, buffer);
     }
 
     public void setAttributeValue(int location, float x, float y) {
-        final float []value = {x, y};
-        final FloatBuffer buffer = ByteBuffer
-                .allocateDirect(BYTES_PER_FLOAT * 2)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(value);
+        final float []values = {x, y};
+        final FloatBuffer buffer = ByteBufferUtils.FromFloat(values);
 
         glVertexAttribPointer(location, 2, GL_FLOAT, false, 0, buffer);
     }
 
     public void setAttributeValue(int location, float x, float y, float z) {
-        final float []value = {x, y, z};
-        final FloatBuffer buffer = ByteBuffer
-                .allocateDirect(BYTES_PER_FLOAT * 3)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(value);
+        final float []values = {x, y, z};
+        final FloatBuffer buffer = ByteBufferUtils.FromFloat(values);
 
         glVertexAttribPointer(location, 3, GL_FLOAT, false, 0, buffer);
     }
 
     public void setAttributeValue(int location, float x, float y, float z, float w) {
-        final float []value = {x, y, z , w};
-        final FloatBuffer buffer = ByteBuffer
-                .allocateDirect(BYTES_PER_FLOAT * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(value);
+        final float []values = {x, y, z , w};
+        final FloatBuffer buffer = ByteBufferUtils.FromFloat(values);
 
         glVertexAttribPointer(location, 4, GL_FLOAT, false, 0, buffer);
     }
@@ -144,33 +127,26 @@ public final class OpenGLESShaderProgram {
         glUniform4f(location, x, y, z, w);
     }
 
-    public void setAttributeArray(int location, final float []values) {
-        setAttributeArray(location, values, 0);
+    public void setUniformValue(int location, final int componentSize, float []values) {
+        setUniformValue(location, componentSize, values, 0);
     }
 
-    public void setAttributeArray(int location, final float []values, int stride) {
-
-        final FloatBuffer buffer = ByteBuffer
-                .allocateDirect(BYTES_PER_FLOAT * values.length)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(values);
-
-        glVertexAttribPointer(location, values.length, GL_FLOAT, false, stride, buffer);
+    public void setUniformValue(int location, final int componentSize, float []values, int offset) {
+        glUniformMatrix4fv(location, componentSize,false, values, offset);
     }
 
-    public void setAttributeArray(int location, int type, final float []values) {
-        setAttributeArray(location, type, values, 0);
+    public void setAttributeArray(int location, final int componentSize, final float []values, int stride) {
+        setAttributeArray(location, componentSize, GL_FLOAT, values, stride, 0);
     }
 
-    public void setAttributeArray(int location, int type, final float []values, int stride) {
-        final FloatBuffer buffer = ByteBuffer
-                .allocateDirect(BYTES_PER_FLOAT * values.length)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer()
-                .put(values);
+    public void setAttributeArray(int location, final int componentSize, final float []values, int stride, final int offset) {
+        setAttributeArray(location, componentSize, GL_FLOAT, values, stride, offset);
+    }
 
-        glVertexAttribPointer(location, values.length, type, false, stride, buffer);
+    public void setAttributeArray(int location, final int componentSize, int type, final float []values, final int stride, final int offset) {
+        final FloatBuffer buffer = ByteBufferUtils.FromFloat(values);
+        buffer.position(offset);
+        glVertexAttribPointer(location, componentSize, type, false, stride, buffer);
     }
 
     public void enableAttributeArray(int location) {
@@ -184,21 +160,25 @@ public final class OpenGLESShaderProgram {
     public boolean link() {
         program = glCreateProgram();
 
+        if (program == 0) {
+            Log.w(TAG, "Could not create new program");
+            return false;
+        }
+
         for (int shader: shaders) {
             glAttachShader(program, shader);
         }
 
         glLinkProgram(program);
         final int[] linkStatus = new int[1];
-        glGetShaderiv(program, GL_LINK_STATUS, linkStatus, 0);
-
-        for (int shader: shaders) {
-            glDeleteShader(shader);
-        }
-
-        shaders.clear();
+        glGetProgramiv(program, GL_LINK_STATUS, linkStatus, 0);
 
         if (linkStatus[0] == 0) {
+            for (int shader: shaders) {
+                glDeleteShader(shader);
+            }
+
+            shaders.clear();
             Log.e(TAG,"link error");
             return false;
         }

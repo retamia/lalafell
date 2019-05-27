@@ -14,17 +14,16 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseArray;
 import android.view.Surface;
 
 import org.retamia.lalafell.record.media.Frame;
-import org.retamia.lalafell.record.utils.ByteBufferUtils;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -83,7 +82,7 @@ public class CameraSource extends Source {
         cameraHandlerThread.start();
         cameraHandler = new Handler(cameraHandlerThread.getLooper());
 
-        cameraImageReader = ImageReader.newInstance(1080, 2160, ImageFormat.YUV_420_888, 30);
+        cameraImageReader = ImageReader.newInstance(1080, 2160, ImageFormat.YUV_420_888, 24);
         cameraImageReader.setOnImageAvailableListener(onImageAvailableListener, cameraHandler);
 
         cameraImageReaderSurface = cameraImageReader.getSurface();
