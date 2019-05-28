@@ -1,8 +1,9 @@
-package org.retamia.liveplayer;
+package org.retamia.lalafell.demo;
 
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+
 
 import org.retamia.lalafell.record.LalafellRecordActivity;
 

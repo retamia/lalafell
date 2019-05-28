@@ -1,4 +1,4 @@
-package org.retamia.liveplayer;
+package org.retamia.demo;
 
 import org.junit.Test;
 

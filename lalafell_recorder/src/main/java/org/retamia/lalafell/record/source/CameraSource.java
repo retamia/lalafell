@@ -12,6 +12,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import androidx.annotation.NonNull;
@@ -24,6 +25,9 @@ import android.view.Surface;
 
 import org.retamia.lalafell.record.media.Frame;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -82,7 +86,7 @@ public class CameraSource extends Source {
         cameraHandlerThread.start();
         cameraHandler = new Handler(cameraHandlerThread.getLooper());
 
-        cameraImageReader = ImageReader.newInstance(1080, 2160, ImageFormat.YUV_420_888, 24);
+        cameraImageReader = ImageReader.newInstance(1080, 2160, ImageFormat.YUV_420_888, 10);
         cameraImageReader.setOnImageAvailableListener(onImageAvailableListener, cameraHandler);
 
         cameraImageReaderSurface = cameraImageReader.getSurface();
@@ -190,32 +194,70 @@ public class CameraSource extends Source {
                 return;
             }
 
-            android.media.Image.Plane[] plane = nativeImage.getPlanes();
+            try {
+                android.media.Image.Plane[] plane = nativeImage.getPlanes();
 
-            Frame outputImage = new Frame();
+                Frame outputImage = new Frame();
 
-            int []rowStrides = {plane[0].getRowStride(), plane[1].getRowStride(), plane[2].getRowStride()};
+                int []rowStrides = {
+                        plane[0].getRowStride() / plane[0].getPixelStride(),
+                        plane[1].getRowStride() / plane[1].getPixelStride(),
+                        plane[2].getRowStride() / plane[2].getPixelStride()
+                };
 
-            byte []yBuffer = new byte[rowStrides[0] * nativeImage.getHeight()];
-            byte []uBuffer = new byte[rowStrides[1] * nativeImage.getHeight() / 4];
-            byte []vBuffer = new byte[rowStrides[2] * nativeImage.getHeight() / 4];
-            byte [][]yuvBuffer = {yBuffer, uBuffer, vBuffer};
+                byte []yBuffer = new byte[rowStrides[0] * nativeImage.getHeight()];
+                byte []uBuffer = new byte[rowStrides[1] * nativeImage.getHeight() / 2];
+                byte []vBuffer = new byte[rowStrides[2] * nativeImage.getHeight() / 2];
 
-            plane[0].getBuffer().get(yBuffer, 0, rowStrides[0] * nativeImage.getHeight());
-            plane[1].getBuffer().get(uBuffer, 0, rowStrides[1] * nativeImage.getHeight() / 4);
-            plane[2].getBuffer().get(vBuffer, 0, rowStrides[2] * nativeImage.getHeight() / 4);
+                //@TODO Android Camera2 YUV420 UV 数据格式为 U0U0U0 V0V0V0，这样的拷贝方式在大图片格式下效率非常的差，后续考虑native方式实现，目前先实现功能
+                for (int i = 0; i < yBuffer.length; i++) {
+                    yBuffer[i] = plane[0].getBuffer().get(i * plane[0].getPixelStride());
+                }
 
-            outputImage.setPlane(plane.length);
-            outputImage.setRowStride(rowStrides);
-            outputImage.setFormat(Frame.PixelFmt.YUV420P);
-            outputImage.setHeight(nativeImage.getHeight());
-            outputImage.setWidth(nativeImage.getWidth());
-            outputImage.setData(yuvBuffer);
-            outputImage.setPresentationNanoTime(nativeImage.getTimestamp());
+                for (int i = 0; i < uBuffer.length; i++) {
+                    uBuffer[i] = plane[1].getBuffer().get(i * plane[1].getPixelStride());
+                }
 
-            nativeImage.close();
+                for (int i = 0; i < vBuffer.length; i++) {
+                    vBuffer[i] = plane[2].getBuffer().get(i * plane[2].getPixelStride());
+                }
 
-            CameraSource.this.listener.onImageDataAvailable(CameraSource.this, outputImage);
+                byte [][]yuvBuffer = {yBuffer, uBuffer, vBuffer};
+
+                outputImage.setPlane(plane.length);
+                outputImage.setRowStride(rowStrides);
+                outputImage.setFormat(Frame.PixelFmt.YUV420P);
+                outputImage.setHeight(nativeImage.getHeight());
+                outputImage.setWidth(nativeImage.getWidth());
+                outputImage.setData(yuvBuffer);
+                outputImage.setPresentationNanoTime(nativeImage.getTimestamp());
+                nativeImage.close();
+
+                //test: yuv 图片可以查看，YUV Player https://blog.csdn.net/leixiaohua1020/article/details/50466201
+            /*{
+                File downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                File yuvFile = new File(downloadFolder, "test.yuv");
+
+                if (yuvFile.exists()) {
+                    yuvFile.delete();
+                }
+
+                try {
+                    FileOutputStream fos = new FileOutputStream(yuvFile.getPath());
+                    fos.write(outputImage.getData()[0]);
+                    fos.write(outputImage.getData()[1]);
+                    fos.write(outputImage.getData()[2]);
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.e(TAG, "save yuv file error");
+                }
+            }*/
+
+                CameraSource.this.listener.onImageDataAvailable(CameraSource.this, outputImage);
+            } catch (IllegalStateException e) {
+                Log.d(TAG, "image reader close");
+            }
         }
     };
 

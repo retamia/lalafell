@@ -9,8 +9,8 @@
     android:layout_width="match_parent">
 
 
-    <android.opengl.GLSurfaceView
-        android:id="@+id/lalafell_record_gl_preview"
+    <FrameLayout
+        android:id="@+id/lalafell_record_preview_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

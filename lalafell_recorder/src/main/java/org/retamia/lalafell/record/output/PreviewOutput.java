@@ -12,8 +12,13 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
 
+import org.retamia.lalafell.R;
 import org.retamia.lalafell.record.media.Frame;
+import org.retamia.lalafell.record.output.opengl.base.OpenGLESShaderProgram;
+import org.retamia.lalafell.record.output.opengl.base.Vector;
 import org.retamia.lalafell.record.output.opengl.object.Image;
+import org.retamia.lalafell.record.output.opengl.object.Triangle;
+import org.retamia.lalafell.record.utils.TextResourceReader;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.BlockingDeque;
@@ -86,10 +91,9 @@ public class PreviewOutput extends Output {
 
     private void onHandlerFrame(Frame frame) {
         Image image = new Image();
-        image.setWidth(frame.getWidth());
-        image.setHeight(frame.getHeight());
-        image.setX(0);
-        image.setY(0);
+        image.setOriginWidth(frame.getWidth());
+        image.setOriginHeight(frame.getHeight());
+        image.setPosition(new Vector(0.0f, 0.0f, 1.0f));
         image.setData(frame.getData());
         image.setRowStrides(frame.getRowStride());
 
@@ -117,8 +121,6 @@ public class PreviewOutput extends Output {
         }
     }
 
-
-
     public final static class PreviewOutputRenderer implements GLSurfaceView.Renderer {
 
         Rect canvasBorder = new Rect();
@@ -132,8 +134,11 @@ public class PreviewOutput extends Output {
         private Context context;
 
         private Image.Shader imageShader;
+        private Triangle.Shader testShader;
 
         private WeakReference<PreviewOutput> previewOutputWeakReference;
+
+        private float aspectRatio = 0.0f;
 
         public PreviewOutputRenderer(Context context, PreviewOutput output) {
             this.context = context;
@@ -142,13 +147,18 @@ public class PreviewOutput extends Output {
 
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+            canvasProjectM = new float[16];
+            projectionM = new float[16];
+            cameraM = new float[16];
+
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
             // 启用混合模式
-            glEnable(GL_BLEND);
-            glEnable(GL_DEPTH_TEST);
+            /*glEnable(GL_BLEND);
+            glEnable(GL_DEPTH_TEST);*/
 
             imageShader = new Image.Shader(context);
+            //testShader = new Triangle.Shader(context);
         }
 
         @Override
@@ -163,12 +173,15 @@ public class PreviewOutput extends Output {
 
             glViewport(0, 0, width, height);
 
-            canvasProjectM = new float[16];
-            projectionM = new float[16];
-            cameraM = new float[16];
+            aspectRatio = (float) width / height;
 
-            Matrix.orthoM(canvasProjectM, 0, 0.0f, canvasBorder.width(), 0.0f, canvasBorder.height(), 1.0f, 100.0f);
-            Matrix.perspectiveM(projectionM, 0, 45, (float)width / height, 1.0f, 100.0f);
+            Matrix.setIdentityM(canvasProjectM, 0);
+            Matrix.orthoM(canvasProjectM, 0, 0.0f, canvasBorder.width(), canvasBorder.height(), 0.0f, 1.0f, 100.0f);
+
+            Matrix.setIdentityM(projectionM, 0);
+            Matrix.perspectiveM(projectionM, 0, 45, aspectRatio, 1.0f, 100.0f);
+
+            Matrix.setIdentityM(cameraM, 0);
             Matrix.setLookAtM(cameraM, 0, 0, 0, -5, 0, 0, 0, 0, 1, 0);
         }
 
@@ -182,6 +195,8 @@ public class PreviewOutput extends Output {
 
             drawObjectToCanvas(deltaTime);
             drawObjectToWorld(deltaTime);
+
+            //drawTest();
         }
 
         private void drawObjectToCanvas(float deltaTime) {
@@ -199,6 +214,9 @@ public class PreviewOutput extends Output {
                     return;
                 }
 
+                float imageAspect = (float)image.getOriginWidth() / image.getOriginHeight();
+                image.setWidth(canvasBorder.width());
+                image.setHeight((int)(canvasBorder.width() / imageAspect));
                 imageShader.setProjectionM(canvasProjectM);
                 imageShader.drawImage(image);
             } catch (InterruptedException e) {
@@ -208,6 +226,10 @@ public class PreviewOutput extends Output {
 
         private void drawObjectToWorld(float deltaTime) {
 
+        }
+
+        private void drawTest() {
+            testShader.draw();
         }
     }
 }

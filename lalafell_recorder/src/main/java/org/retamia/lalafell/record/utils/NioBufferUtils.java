@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-public final class ByteBufferUtils {
+public final class NioBufferUtils {
 
     public static final int BYTES_PER_FLOAT = 4;
 

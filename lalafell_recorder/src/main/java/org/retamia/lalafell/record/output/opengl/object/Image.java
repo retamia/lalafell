@@ -1,16 +1,19 @@
 package org.retamia.lalafell.record.output.opengl.object;
 
 import android.content.Context;
-import android.opengl.GLUtils;
 
 import org.retamia.lalafell.R;
 import org.retamia.lalafell.record.output.opengl.base.OpenGLESShaderProgram;
-import org.retamia.lalafell.record.utils.ByteBufferUtils;
+import org.retamia.lalafell.record.output.opengl.base.Vector;
+import org.retamia.lalafell.record.utils.NioBufferUtils;
 import org.retamia.lalafell.record.utils.TextResourceReader;
+
+import java.nio.FloatBuffer;
 
 import static android.opengl.GLES20.GL_CLAMP_TO_EDGE;
 import static android.opengl.GLES20.GL_LINEAR;
 import static android.opengl.GLES20.GL_LUMINANCE;
+import static android.opengl.GLES20.GL_LUMINANCE_ALPHA;
 import static android.opengl.GLES20.GL_TEXTURE0;
 import static android.opengl.GLES20.GL_TEXTURE1;
 import static android.opengl.GLES20.GL_TEXTURE2;
@@ -19,7 +22,7 @@ import static android.opengl.GLES20.GL_TEXTURE_MAG_FILTER;
 import static android.opengl.GLES20.GL_TEXTURE_MIN_FILTER;
 import static android.opengl.GLES20.GL_TEXTURE_WRAP_S;
 import static android.opengl.GLES20.GL_TEXTURE_WRAP_T;
-import static android.opengl.GLES20.GL_TRIANGLES;
+import static android.opengl.GLES20.GL_TRIANGLE_STRIP;
 import static android.opengl.GLES20.GL_UNSIGNED_BYTE;
 import static android.opengl.GLES20.glActiveTexture;
 import static android.opengl.GLES20.glBindTexture;
@@ -32,48 +35,17 @@ import static android.opengl.GLES20.glTexParameteri;
 /**
  * default yuv420p pixel format
  */
-public class Image {
+public class Image extends LObject {
 
-    private int width;
-    private int height;
-    private float x;
-    private float y;
+
     private byte[][] data;
     private int []rowStrides;
+    private int width;
+    private int height;
+    private int originWidth;
+    private int originHeight;
 
     public Image() {
-    }
-
-    public int getWidth() {
-        return width;
-    }
-
-    public void setWidth(int width) {
-        this.width = width;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    public float getX() {
-        return x;
-    }
-
-    public void setX(float x) {
-        this.x = x;
-    }
-
-    public float getY() {
-        return y;
-    }
-
-    public void setY(float y) {
-        this.y = y;
     }
 
     public byte[][] getData() {
@@ -92,7 +64,42 @@ public class Image {
         this.rowStrides = rowStrides;
     }
 
+    public final int getWidth() {
+        return width;
+    }
+
+    public final void setWidth(int width) {
+        this.width = width;
+    }
+
+    public final int getHeight() {
+        return height;
+    }
+
+    public final void setHeight(int height) {
+        this.height = height;
+    }
+
+    public int getOriginWidth() {
+        return originWidth;
+    }
+
+    public void setOriginWidth(int originWidth) {
+        this.originWidth = originWidth;
+    }
+
+    public int getOriginHeight() {
+        return originHeight;
+    }
+
+    public void setOriginHeight(int originHeight) {
+        this.originHeight = originHeight;
+    }
+
     public static class Shader {
+
+        public static int COORD_COMPONENT_COUNT = 3;
+        public static int UV_COMPONENT_COUNT = 2;
 
         int          []textureY = {0};
         int          []textureU = {0};
@@ -103,7 +110,7 @@ public class Image {
         int          uTextureV;
 
         int          aTextureUV;
-        int          aVertex;
+        int          aPosition;
 
         int          uProjection;
 
@@ -137,7 +144,7 @@ public class Image {
             uTextureU = shaderProgram.uniformLocation("u_texture_u");
             uTextureV = shaderProgram.uniformLocation("u_texture_v");
 
-            aVertex = shaderProgram.attributeLocation("a_vertex");
+            aPosition = shaderProgram.attributeLocation("a_position");
             aTextureUV = shaderProgram.attributeLocation("a_texture_uv");
 
             glGenTextures(1, textureY, 0);
@@ -146,21 +153,23 @@ public class Image {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glBind
+            glBindTexture(GL_TEXTURE_2D, 0);
 
             glGenTextures(1, textureU, 0);
             glBindTexture(GL_TEXTURE_2D, textureU[0]);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glBindTexture(GL_TEXTURE_2D, 0);
 
             glGenTextures(1, textureV, 0);
             glBindTexture(GL_TEXTURE_2D, textureV[0]);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
 
         public void setProjectionM(float []matrix) {
@@ -172,41 +181,39 @@ public class Image {
             shaderProgram.bind();
 
             float []points = {
-                    0, 0, 0.0f, 0.0f,
-                    image.width, 0, 1.0f, 0.0f,
-                    0, image.height, 0.0f, 1.0f,
-                    image.width, 0, 1.0f, 0.0f,
-                    0, image.height, 0.0f, 1.0f,
-                    image.width, image.height, 1.0f, 1.0f
+                    image.getPosition().getX(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), 0.0f, 0.0f,   // bottom left
+                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), 1.0f, 0.0f, // bottom right
+                    image.getPosition().getX(), image.getPosition().getY(), image.getPosition().getZ(), 0.0f, 1.0f, // top left
+                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY(), image.getPosition().getY(), 1.0f, 1.0f, //top right
             };
 
-            shaderProgram.setAttributeArray(aVertex, 2, points, 2 * ByteBufferUtils.BYTES_PER_FLOAT);
-            shaderProgram.setAttributeArray(aTextureUV, 2, points, 2 * ByteBufferUtils.BYTES_PER_FLOAT, 2);
+            FloatBuffer buffer = NioBufferUtils.FromFloat(points);
+            shaderProgram.enableAttributeArray(aPosition);
+            shaderProgram.setAttributeArray(aPosition, COORD_COMPONENT_COUNT, buffer, 5 * NioBufferUtils.BYTES_PER_FLOAT);
+
+            shaderProgram.enableAttributeArray(aTextureUV);
+            shaderProgram.setAttributeArray(aTextureUV, UV_COMPONENT_COUNT, buffer, 5 * NioBufferUtils.BYTES_PER_FLOAT, 2);
 
             shaderProgram.setUniformValue(uProjection, 1, projectionM);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureY[0]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[0], image.height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ByteBufferUtils.FromByte(image.data[0]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[0], image.getHeight(), 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[0]));
             shaderProgram.setUniformValue(uTextureY, 0);
 
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, textureU[0]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[1], image.height / 4, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ByteBufferUtils.FromByte(image.data[1]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, image.rowStrides[1], image.getHeight() / 2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[1]));
             shaderProgram.setUniformValue(uTextureU, 1);
 
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, textureV[0]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[2], image.height / 4, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, ByteBufferUtils.FromByte(image.data[2]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, image.rowStrides[2], image.getHeight() / 2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[2]));
             shaderProgram.setUniformValue(uTextureV, 2);
 
-            shaderProgram.enableAttributeArray(aVertex);
-            shaderProgram.enableAttributeArray(aTextureUV);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-            glDrawArrays(GL_TRIANGLES, 0, 3);
-            glDrawArrays(GL_TRIANGLES, 3, 6);
-
-            shaderProgram.disableAttributeArray(aVertex);
+            shaderProgram.disableAttributeArray(aPosition);
             shaderProgram.disableAttributeArray(aTextureUV);
         }
     }

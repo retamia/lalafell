@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import org.retamia.lalafell.R;
@@ -22,7 +23,8 @@ public class LalafellRecordActivity extends AppCompatActivity {
 
     public static String ACTION = "org.retamia.lalafell.record.LalafellRecordActivity";
 
-    private GLSurfaceView glSurfaceView;
+    private GLSurfaceView previewView;
+    private FrameLayout previewViewContainer;
     private Scene defaultScene;
 
     private CameraSource cameraSource;
@@ -45,7 +47,7 @@ public class LalafellRecordActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_record);
 
-        glSurfaceView = findViewById(R.id.lalafell_record_gl_preview);
+        previewViewContainer = findViewById(R.id.lalafell_record_preview_container);
 
         cameraSource = new CameraSource(this);
         previewOutput = new PreviewOutput(this);
@@ -58,9 +60,12 @@ public class LalafellRecordActivity extends AppCompatActivity {
         defaultScene.setListener(sceneListener);
         defaultScene.init();
 
-        glSurfaceView.setEGLContextClientVersion(2);
         previewOutputRenderer = new PreviewOutput.PreviewOutputRenderer(this, previewOutput);
-        glSurfaceView.setRenderer(previewOutputRenderer);
+
+        previewView = new GLSurfaceView(this);
+        previewView.setEGLContextClientVersion(2);
+        previewView.setRenderer(previewOutputRenderer);
+        previewViewContainer.addView(previewView);
     }
 
     @Override

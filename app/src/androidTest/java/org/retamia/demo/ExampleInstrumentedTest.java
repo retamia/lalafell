@@ -1,4 +1,4 @@
-package org.retamia.liveplayer;
+package org.retamia.demo;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
