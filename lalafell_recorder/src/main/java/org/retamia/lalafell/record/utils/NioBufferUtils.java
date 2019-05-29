@@ -32,15 +32,20 @@ public final class NioBufferUtils {
     }
 
     public static ByteBuffer FromByte(final byte []values) {
-        return ByteBuffer.allocateDirect(values.length)
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(values.length)
                 .order(ByteOrder.nativeOrder())
                 .put(values);
+
+        byteBuffer.position(0);
+        return byteBuffer;
     }
 
     public static FloatBuffer FromFloat(final float []values) {
-        return ByteBuffer.allocateDirect(values.length * BYTES_PER_FLOAT)
+        FloatBuffer buffer = ByteBuffer.allocateDirect(values.length * BYTES_PER_FLOAT)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer()
                 .put(values);
+        buffer.position(0);
+        return buffer;
     }
 }

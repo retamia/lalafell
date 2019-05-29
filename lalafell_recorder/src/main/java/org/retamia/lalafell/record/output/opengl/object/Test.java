@@ -10,9 +10,10 @@ import org.retamia.lalafell.record.utils.TextResourceReader;
 import java.nio.FloatBuffer;
 
 import static android.opengl.GLES20.GL_TRIANGLES;
+import static android.opengl.GLES20.GL_TRIANGLE_STRIP;
 import static android.opengl.GLES20.glDrawArrays;
 
-public class Triangle extends LObject {
+public class Test extends LObject {
 
     public static final class Shader {
         private OpenGLESShaderProgram testShader;
@@ -45,16 +46,19 @@ public class Triangle extends LObject {
         public void draw() {
             testShader.bind();
             float []points = {
-                -1.0f, -1.0f, 1.0f,
-                1.0f, -1.0f, 1.0f,
-                0.0f, 1.0f, 1.0f,
+                    1,  1,  1,
+                    1, -1,  1,
+                    -1,  1,  1,
+                    -1,  1,  1,
+                    1, -1,  1,
+                    -1, -1,  1,
             };
             FloatBuffer buffer = NioBufferUtils.FromFloat(points);
             testShader.enableAttributeArray(aPositionLocation);
             testShader.setAttributeArray(aPositionLocation, 3, buffer, 3 * NioBufferUtils.BYTES_PER_FLOAT);
             testShader.setUniformValue(uColorLocation, 0.5f, 0.5f, 0.5f, 1.0f);
 
-            glDrawArrays(GL_TRIANGLES, 0, 3);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
         }
     }
 }

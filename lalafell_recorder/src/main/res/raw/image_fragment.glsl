@@ -29,6 +29,6 @@ void main()
     rgb.y = yuv.x - 0.3917694091796875 * yuv.y - 0.8129730224609375 * yuv.z;
     rgb.z = yuv.x + 2.017227172851563 * yuv.y;*/
 
-    gl_FragColor = vec4(0.5, 0.5, 0.5, 1);
+    gl_FragColor = vec4(rgb, 1);
 
 }

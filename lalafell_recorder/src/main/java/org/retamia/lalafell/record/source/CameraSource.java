@@ -209,16 +209,11 @@ public class CameraSource extends Source {
                 byte []uBuffer = new byte[rowStrides[1] * nativeImage.getHeight() / 2];
                 byte []vBuffer = new byte[rowStrides[2] * nativeImage.getHeight() / 2];
 
-                //@TODO Android Camera2 YUV420 UV 数据格式为 U0U0U0 V0V0V0，这样的拷贝方式在大图片格式下效率非常的差，后续考虑native方式实现，目前先实现功能
-                for (int i = 0; i < yBuffer.length; i++) {
-                    yBuffer[i] = plane[0].getBuffer().get(i * plane[0].getPixelStride());
-                }
+                plane[0].getBuffer().get(yBuffer);
+                //@TODO Android Camera2 YUV420 UV 数据格式为 U0U0U0 V0V0V0
 
                 for (int i = 0; i < uBuffer.length; i++) {
                     uBuffer[i] = plane[1].getBuffer().get(i * plane[1].getPixelStride());
-                }
-
-                for (int i = 0; i < vBuffer.length; i++) {
                     vBuffer[i] = plane[2].getBuffer().get(i * plane[2].getPixelStride());
                 }
 

@@ -2,7 +2,6 @@ package org.retamia.lalafell.record.output;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.graphics.SurfaceTexture;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Handler;
@@ -10,15 +9,11 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
-import android.util.Log;
 
-import org.retamia.lalafell.R;
 import org.retamia.lalafell.record.media.Frame;
-import org.retamia.lalafell.record.output.opengl.base.OpenGLESShaderProgram;
 import org.retamia.lalafell.record.output.opengl.base.Vector;
 import org.retamia.lalafell.record.output.opengl.object.Image;
-import org.retamia.lalafell.record.output.opengl.object.Triangle;
-import org.retamia.lalafell.record.utils.TextResourceReader;
+import org.retamia.lalafell.record.output.opengl.object.Test;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.BlockingDeque;
@@ -32,10 +27,13 @@ import static android.opengl.GLES20.GL_BLEND;
 import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
 import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
 import static android.opengl.GLES20.GL_DEPTH_TEST;
+import static android.opengl.GLES20.GL_ONE;
+import static android.opengl.GLES20.GL_ONE_MINUS_SRC_ALPHA;
+import static android.opengl.GLES20.glBlendFunc;
+import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glViewport;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glClear;
-import static android.opengl.GLES20.glEnable;
 
 
 public class PreviewOutput extends Output {
@@ -126,7 +124,7 @@ public class PreviewOutput extends Output {
         Rect canvasBorder = new Rect();
 
         private float[] projectionM;
-        private float[] canvasProjectM;
+        private float[] canvasProjectionM;
         private float[] cameraM;
 
         private long startTime;
@@ -134,7 +132,7 @@ public class PreviewOutput extends Output {
         private Context context;
 
         private Image.Shader imageShader;
-        private Triangle.Shader testShader;
+        private Test.Shader testShader;
 
         private WeakReference<PreviewOutput> previewOutputWeakReference;
 
@@ -147,18 +145,18 @@ public class PreviewOutput extends Output {
 
         @Override
         public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            canvasProjectM = new float[16];
+            canvasProjectionM = new float[16];
             projectionM = new float[16];
             cameraM = new float[16];
 
             glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
-            // 启用混合模式
-            /*glEnable(GL_BLEND);
-            glEnable(GL_DEPTH_TEST);*/
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_DEPTH_TEST);
 
             imageShader = new Image.Shader(context);
-            //testShader = new Triangle.Shader(context);
+            testShader = new Test.Shader(context);
         }
 
         @Override
@@ -175,10 +173,8 @@ public class PreviewOutput extends Output {
 
             aspectRatio = (float) width / height;
 
-            Matrix.setIdentityM(canvasProjectM, 0);
-            Matrix.orthoM(canvasProjectM, 0, 0.0f, canvasBorder.width(), canvasBorder.height(), 0.0f, 1.0f, 100.0f);
+            Matrix.orthoM(canvasProjectionM, 0, 0.0f, width, height, 0.0f, 1.0f, 100.0f);
 
-            Matrix.setIdentityM(projectionM, 0);
             Matrix.perspectiveM(projectionM, 0, 45, aspectRatio, 1.0f, 100.0f);
 
             Matrix.setIdentityM(cameraM, 0);
@@ -217,7 +213,7 @@ public class PreviewOutput extends Output {
                 float imageAspect = (float)image.getOriginWidth() / image.getOriginHeight();
                 image.setWidth(canvasBorder.width());
                 image.setHeight((int)(canvasBorder.width() / imageAspect));
-                imageShader.setProjectionM(canvasProjectM);
+                imageShader.setProjectionM(canvasProjectionM);
                 imageShader.drawImage(image);
             } catch (InterruptedException e) {
                 return;

@@ -1,10 +1,10 @@
 package org.retamia.lalafell.record.output.opengl.object;
 
 import android.content.Context;
+import android.opengl.Matrix;
 
 import org.retamia.lalafell.R;
 import org.retamia.lalafell.record.output.opengl.base.OpenGLESShaderProgram;
-import org.retamia.lalafell.record.output.opengl.base.Vector;
 import org.retamia.lalafell.record.utils.NioBufferUtils;
 import org.retamia.lalafell.record.utils.TextResourceReader;
 
@@ -13,7 +13,6 @@ import java.nio.FloatBuffer;
 import static android.opengl.GLES20.GL_CLAMP_TO_EDGE;
 import static android.opengl.GLES20.GL_LINEAR;
 import static android.opengl.GLES20.GL_LUMINANCE;
-import static android.opengl.GLES20.GL_LUMINANCE_ALPHA;
 import static android.opengl.GLES20.GL_TEXTURE0;
 import static android.opengl.GLES20.GL_TEXTURE1;
 import static android.opengl.GLES20.GL_TEXTURE2;
@@ -22,11 +21,12 @@ import static android.opengl.GLES20.GL_TEXTURE_MAG_FILTER;
 import static android.opengl.GLES20.GL_TEXTURE_MIN_FILTER;
 import static android.opengl.GLES20.GL_TEXTURE_WRAP_S;
 import static android.opengl.GLES20.GL_TEXTURE_WRAP_T;
-import static android.opengl.GLES20.GL_TRIANGLE_STRIP;
+import static android.opengl.GLES20.GL_TRIANGLES;
 import static android.opengl.GLES20.GL_UNSIGNED_BYTE;
 import static android.opengl.GLES20.glActiveTexture;
 import static android.opengl.GLES20.glBindTexture;
 import static android.opengl.GLES20.glDrawArrays;
+import static android.opengl.GLES20.glFinish;
 import static android.opengl.GLES20.glGenTextures;
 import static android.opengl.GLES20.glTexImage2D;
 import static android.opengl.GLES20.glTexParameteri;
@@ -180,38 +180,52 @@ public class Image extends LObject {
 
             shaderProgram.bind();
 
-            float []points = {
-                    image.getPosition().getX(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), 0.0f, 0.0f,   // bottom left
-                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), 1.0f, 0.0f, // bottom right
-                    image.getPosition().getX(), image.getPosition().getY(), image.getPosition().getZ(), 0.0f, 1.0f, // top left
-                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY(), image.getPosition().getY(), 1.0f, 1.0f, //top right
+            float []vertexCoords = {
+                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY(), image.getPosition().getZ(), //top right
+                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), // bottom right
+                    image.getPosition().getX(), image.getPosition().getY(), image.getPosition().getZ(), // top left
+                    image.getPosition().getX(), image.getPosition().getY(), image.getPosition().getZ(), // top left
+                    image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), // bottom right
+                    image.getPosition().getX(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(),   // bottom left
             };
 
-            FloatBuffer buffer = NioBufferUtils.FromFloat(points);
+            FloatBuffer buffer = NioBufferUtils.FromFloat(vertexCoords);
             shaderProgram.enableAttributeArray(aPosition);
-            shaderProgram.setAttributeArray(aPosition, COORD_COMPONENT_COUNT, buffer, 5 * NioBufferUtils.BYTES_PER_FLOAT);
+            shaderProgram.setAttributeArray(aPosition, COORD_COMPONENT_COUNT, buffer, COORD_COMPONENT_COUNT * NioBufferUtils.BYTES_PER_FLOAT);
 
+            float []uv = {
+                    1.0f, 1.0f,
+                    1.0f, 0.0f,
+                    0.0f, 1.0f,
+                    0.0f, 1.0f,
+                    1.0f, 0.0f,
+                    0,0f, 0.0f,
+            };
+            FloatBuffer uvBuffer = NioBufferUtils.FromFloat(uv);
             shaderProgram.enableAttributeArray(aTextureUV);
-            shaderProgram.setAttributeArray(aTextureUV, UV_COMPONENT_COUNT, buffer, 5 * NioBufferUtils.BYTES_PER_FLOAT, 2);
+            shaderProgram.setAttributeArray(aTextureUV, UV_COMPONENT_COUNT, uvBuffer, UV_COMPONENT_COUNT * NioBufferUtils.BYTES_PER_FLOAT);
 
+            float []test = new float[4];
+            float []topRightVector = { vertexCoords[0], vertexCoords[1], vertexCoords[2], 1};
+            Matrix.multiplyMV(test, 0, projectionM, 0, topRightVector, 0);
             shaderProgram.setUniformValue(uProjection, 1, projectionM);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureY[0]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[0], image.getHeight(), 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[0]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[0], image.getOriginHeight(), 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[0]));
             shaderProgram.setUniformValue(uTextureY, 0);
 
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, textureU[0]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, image.rowStrides[1], image.getHeight() / 2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[1]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[1], image.getOriginHeight() / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[1]));
             shaderProgram.setUniformValue(uTextureU, 1);
 
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, textureV[0]);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, image.rowStrides[2], image.getHeight() / 2, 0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[2]));
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, image.rowStrides[2], image.getOriginHeight() / 2, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NioBufferUtils.FromByte(image.data[2]));
             shaderProgram.setUniformValue(uTextureV, 2);
 
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
 
             shaderProgram.disableAttributeArray(aPosition);
             shaderProgram.disableAttributeArray(aTextureUV);
