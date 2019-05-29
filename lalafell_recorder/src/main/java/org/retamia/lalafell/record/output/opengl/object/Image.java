@@ -180,13 +180,22 @@ public class Image extends LObject {
 
             shaderProgram.bind();
 
-            float []vertexCoords = {
+            /*float []vertexCoords = {
                     image.getPosition().getX() + image.getWidth(), image.getPosition().getY(), image.getPosition().getZ(), //top right
                     image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), // bottom right
                     image.getPosition().getX(), image.getPosition().getY(), image.getPosition().getZ(), // top left
                     image.getPosition().getX(), image.getPosition().getY(), image.getPosition().getZ(), // top left
                     image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), // bottom right
                     image.getPosition().getX(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(),   // bottom left
+            };*/
+
+            float []vertexCoords = {
+                    1.0f, 1.0f, image.getPosition().getZ(), //top right
+                    1.0f, -1.0f, image.getPosition().getZ(), // bottom right
+                    -1.0f, 1.0f, image.getPosition().getZ(), // top left
+                    -1.0f, 1.0f, image.getPosition().getZ(), // top left
+                    1.0f, -1.0f, image.getPosition().getZ(), // bottom right
+                    -1.0f, -1.0f, image.getPosition().getZ(),   // bottom left
             };
 
             FloatBuffer buffer = NioBufferUtils.FromFloat(vertexCoords);
@@ -205,9 +214,6 @@ public class Image extends LObject {
             shaderProgram.enableAttributeArray(aTextureUV);
             shaderProgram.setAttributeArray(aTextureUV, UV_COMPONENT_COUNT, uvBuffer, UV_COMPONENT_COUNT * NioBufferUtils.BYTES_PER_FLOAT);
 
-            float []test = new float[4];
-            float []topRightVector = { vertexCoords[0], vertexCoords[1], vertexCoords[2], 1};
-            Matrix.multiplyMV(test, 0, projectionM, 0, topRightVector, 0);
             shaderProgram.setUniformValue(uProjection, 1, projectionM);
 
             glActiveTexture(GL_TEXTURE0);

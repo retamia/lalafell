@@ -171,9 +171,13 @@ public class PreviewOutput extends Output {
 
             glViewport(0, 0, width, height);
 
-            aspectRatio = (float) width / height;
+            final float aspectRatio = width > height ? (float)width / (float)height : (float)height / (float)width;
 
-            Matrix.orthoM(canvasProjectionM, 0, 0.0f, width, height, 0.0f, 1.0f, 100.0f);
+            if (width > height) {
+                Matrix.orthoM(canvasProjectionM,0, -aspectRatio, aspectRatio,-1f,1f,1f,100f);
+            } else {
+                Matrix.orthoM(canvasProjectionM,0,-1f,1f, -aspectRatio, aspectRatio,1f,100f);
+            }
 
             Matrix.perspectiveM(projectionM, 0, 45, aspectRatio, 1.0f, 100.0f);
 
