@@ -23,6 +23,8 @@ import android.util.Size;
 import android.util.SparseArray;
 import android.view.Surface;
 
+import org.joml.AxisAngle4f;
+import org.joml.Quaternionf;
 import org.retamia.lalafell.record.media.Frame;
 
 import java.io.File;
@@ -86,7 +88,7 @@ public class CameraSource extends Source {
         cameraHandlerThread.start();
         cameraHandler = new Handler(cameraHandlerThread.getLooper());
 
-        cameraImageReader = ImageReader.newInstance(1080, 2160, ImageFormat.YUV_420_888, 10);
+        cameraImageReader = ImageReader.newInstance(1080, 1920, ImageFormat.YUV_420_888, 10);
         cameraImageReader.setOnImageAvailableListener(onImageAvailableListener, cameraHandler);
 
         cameraImageReaderSurface = cameraImageReader.getSurface();
@@ -249,6 +251,8 @@ public class CameraSource extends Source {
                 }
             }*/
 
+                outputImage.setRotation(new Quaternionf(new AxisAngle4f(270, 0, 0, 1)));
+
                 CameraSource.this.listener.onImageDataAvailable(CameraSource.this, outputImage);
             } catch (IllegalStateException e) {
                 Log.d(TAG, "image reader close");
@@ -267,6 +271,7 @@ public class CameraSource extends Source {
             try {
                 CaptureRequest.Builder requestBuilder = session.getDevice().createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
                 requestBuilder.addTarget(cameraImageReaderSurface);
+                //requestBuilder.set(CaptureRequest.JPEG_ORIENTATION, cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION));
                 session.setRepeatingRequest(requestBuilder.build(), null, cameraHandler);
 
                 Log.d(TAG, "CameraCaptureSession.StateCallback onConfigured success");

@@ -116,6 +116,7 @@ public class Image extends LObject {
 
         float        []projectionM;
 
+
         OpenGLESShaderProgram shaderProgram;
         private Context context;
 
@@ -180,6 +181,8 @@ public class Image extends LObject {
 
             shaderProgram.bind();
 
+            shaderProgram.setUniformValue(uProjection, 1, projectionM);
+
             /*float []vertexCoords = {
                     image.getPosition().getX() + image.getWidth(), image.getPosition().getY(), image.getPosition().getZ(), //top right
                     image.getPosition().getX() + image.getWidth(), image.getPosition().getY() + image.getHeight(), image.getPosition().getZ(), // bottom right
@@ -213,8 +216,6 @@ public class Image extends LObject {
             FloatBuffer uvBuffer = NioBufferUtils.FromFloat(uv);
             shaderProgram.enableAttributeArray(aTextureUV);
             shaderProgram.setAttributeArray(aTextureUV, UV_COMPONENT_COUNT, uvBuffer, UV_COMPONENT_COUNT * NioBufferUtils.BYTES_PER_FLOAT);
-
-            shaderProgram.setUniformValue(uProjection, 1, projectionM);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textureY[0]);

@@ -1,6 +1,8 @@
 package org.retamia.lalafell.record.media;
 
 
+import org.joml.Quaternionf;
+
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
@@ -20,6 +22,7 @@ public class Frame {
     private int   plane;
     private int[] rowStride;
     private long  presentationNanoTime;
+    private Quaternionf rotation;
 
     public byte[][] getData() {
         return data;
@@ -75,5 +78,13 @@ public class Frame {
 
     public void setPresentationNanoTime(long presentationNanoTime) {
         this.presentationNanoTime = presentationNanoTime;
+    }
+
+    public Quaternionf getRotation() {
+        return rotation;
+    }
+
+    public void setRotation(Quaternionf rotation) {
+        this.rotation = rotation;
     }
 }
