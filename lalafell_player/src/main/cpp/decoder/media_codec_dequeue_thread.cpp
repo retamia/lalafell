@@ -63,17 +63,18 @@ void MediaCodecDequeueThread::run()
                 frame->videoFormat.type = RPixelFormatType::YUV420P;
                 frame->pts = info.presentationTimeUs;
                 frame->linesize[0] = frame->videoFormat.width;
-                frame->linesize[1] = frame->videoFormat.width / 4;
-                frame->linesize[2] = frame->videoFormat.width / 4;
+                frame->linesize[1] = frame->videoFormat.width / 2;
+                frame->linesize[2] = frame->videoFormat.width / 2;
                 size_t ySize = frame->linesize[0] * frame->videoFormat.height;
-                size_t uvSize = frame->linesize[1] * frame->videoFormat.height;
-                frame->data[0] = (uint8_t *)malloc((ySize + uvSize) * sizeof(uint8_t));
+                size_t uSize = frame->linesize[1] * frame->videoFormat.height;
+                size_t vSize = frame->linesize[2] * frame->videoFormat.height;
+                frame->data[0] = (uint8_t *)malloc((ySize + uSize + vSize) * sizeof(uint8_t));
                 frame->data[1] = frame->data[0] + ySize;
-                frame->data[2] = frame->data[1] + ySize + uvSize;
+                frame->data[2] = frame->data[1] + ySize + uSize;
 
                 memcpy(frame->data[0], buffer, ySize);
-                memcpy(frame->data[1], buffer + ySize, uvSize);
-                memcpy(frame->data[2], buffer + ySize + uvSize, uvSize);
+                memcpy(frame->data[1], buffer + ySize, uSize);
+                memcpy(frame->data[2], buffer + ySize + uSize, vSize);
 
                 this->videoFrameQueue->enqueue(frame);
             };
